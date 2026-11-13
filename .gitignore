@@ -1,0 +1,22 @@
+node_modules/
+dist/
+build/
+.next/
+target/
+.anchor/
+.env
+.env.*
+!.env.example
+.env.test
+*.log
+logs/
+.DS_Store
+# Docs pump.fun : clone git externe (reproductible : git clone https://github.com/pump-fun/pump-public-docs vendor/pump-public-docs)
+vendor/pump-public-docs/
+test-ledger/
+.fork-ledger/
+.probe-ledger*/
+probe.out
+probe.err
+# État local des spikes (contient des keypairs jetables du fork — jamais committé)
+spikes/.state/
