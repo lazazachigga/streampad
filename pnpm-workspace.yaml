@@ -1,3 +1,7 @@
+packages:
+  - 'shared'
+  - 'apps/*'
+  - 'packages/*'
 allowBuilds:
   bigint-buffer: true
   bufferutil: true

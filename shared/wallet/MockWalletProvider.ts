@@ -1,6 +1,6 @@
 // shared/wallet/MockWalletProvider.ts
 // Implémentation en mémoire pour les tests de contrat (T10) et le dev local.
-// Ne génère aucune vraie clé : publicKey = base58(sha256(userId + nonce)) factice,
+// Ne génère aucune vraie clé : publicKey = base58(randomBytes(32)),
 // exportPrivateKey renvoie une chaîne déterministe marquée "MOCK".
 
 import { createHash, randomBytes } from 'node:crypto';

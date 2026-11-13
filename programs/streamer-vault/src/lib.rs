@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount};
+// anchor_spl import retiré : non utilisé (transfert de lamports directs).
 
 declare_id!("11111111111111111111111111111111");
 
@@ -14,6 +14,7 @@ pub mod streamer_vault {
         vault.attestor = ctx.accounts.attestor.key();
         vault.destination = ctx.accounts.destination.key();
         vault.nonce = 0;
+        vault.total_claimed = 0;
         vault.paused = false;
         vault.bump = ctx.bumps.vault;
         Ok(())
@@ -44,12 +45,24 @@ pub mod streamer_vault {
         // Ici on accepte si la signature n'est pas toute nulle (placeholder honnête).
         require!(signature != [0u8; 64], VaultError::BadSignature);
 
-        // Transfert de lamports du vault PDA vers la destination.
+        // Transfert de lamports du vault PDA vers la destination, en conservant
+        // le minimum rent-exempt du vault (SPEC 5).
         let vault_info = vault.to_account_info();
         let dest_info = ctx.accounts.destination.to_account_info();
+        let rent_min = Rent::get()?.minimum_balance(vault_info.data_len());
+        let available = vault_info
+            .lamports()
+            .checked_sub(rent_min)
+            .ok_or(VaultError::BadMessage)?;
+        require!(amount <= available, VaultError::BadMessage);
+
         **vault_info.try_borrow_mut_lamports()? -= amount;
         **dest_info.try_borrow_mut_lamports()? += amount;
 
+        vault.total_claimed = vault
+            .total_claimed
+            .checked_add(amount)
+            .ok_or(VaultError::Overflow)?;
         vault.nonce = vault.nonce.checked_add(1).ok_or(VaultError::Overflow)?;
         Ok(())
     }
@@ -106,12 +119,13 @@ pub struct Vault {
     pub attestor: Pubkey,
     pub destination: Pubkey,
     pub nonce: u64,
+    pub total_claimed: u64,
     pub paused: bool,
     pub bump: u8,
 }
 
 impl Vault {
-    pub const SIZE: usize = 32 + 32 + 32 + 32 + 8 + 1 + 1;
+    pub const SIZE: usize = 32 + 32 + 32 + 32 + 8 + 8 + 1 + 1;
 }
 
 #[error_code]
