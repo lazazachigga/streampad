@@ -1,0 +1,119 @@
+// apps/backend/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  identities OAuthIdentity[]
+  wallets   Wallet[]
+  tokens    Token[]
+  claims    FeeClaim[]
+}
+
+model OAuthIdentity {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  provider       String   // twitch | kick
+  providerUserId String
+  login          String
+  accessToken    String   // chiffré AES-256-GCM
+  refreshToken   String?
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  @@unique([provider, providerUserId])
+}
+
+model Wallet {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  type       String   // EMBEDDED | EXTERNAL
+  publicKey  String
+  provider   String   // privy | turnkey | external
+  createdAt  DateTime @default(now())
+}
+
+model Token {
+  id           String   @id @default(cuid())
+  mint         String   @unique
+  name         String
+  symbol       String
+  uri          String
+  streamerId   String
+  streamer     User     @relation(fields: [streamerId], references: [id])
+  status       String   // PENDING_VAULT | VAULT_READY | TOKEN_CREATED | SHARING_CREATED | SHARES_FINALIZED | ACTIVE | FAILED_RECOVERABLE | NEEDS_MANUAL
+  streamerBps  Int
+  protocolBps  Int
+  quoteMint    String   @default("So11111111111111111111111111111111111111112")
+  vaultPda     String?
+  sharingConfig String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  distributions FeeDistribution[]
+}
+
+model FeeDistribution {
+  id        String   @id @default(cuid())
+  tokenId   String
+  token     Token    @relation(fields: [tokenId], references: [id])
+  signature String
+  amount    BigInt
+  slot      BigInt
+  createdAt DateTime @default(now())
+}
+
+model FeeClaim {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  mint            String
+  amount          BigInt
+  nonce           BigInt
+  destination     String
+  attestationSig  String
+  claimSignature  String?
+  status          String   // PENDING | SUBMITTED | CONFIRMED | FAILED
+  createdAt       DateTime @default(now())
+}
+
+model AttestationNonce {
+  id        String   @id @default(cuid())
+  nonce     BigInt
+  mint      String
+  userId    String
+  usedAt    DateTime @default(now())
+  @@unique([mint, nonce])
+}
+
+model BuybackLog {
+  id        String   @id @default(cuid())
+  signature String
+  amountSol  BigInt
+  tokenMint String
+  avgPrice  String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  userId    String?
+  metadata  Json
+  createdAt DateTime @default(now())
+}
+
+model IndexerCursor {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slot      BigInt
+  updatedAt DateTime @updatedAt
+}

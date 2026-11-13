@@ -7,3 +7,6 @@ allowBuilds:
   bufferutil: true
   esbuild: true
   utf-8-validate: true
+  prisma: true
+  '@prisma/client': true
+  '@prisma/engines': true
