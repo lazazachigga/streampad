@@ -95,3 +95,8 @@ _Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 + T7 GO, T6 PARTIEL,
 - Fix : seuil retenu après la 1re observation + boucle sur la balance réelle du vault
 - GO : 5 cycles × (1 buy → sweep+distribute) = 5 × 5 880 000 lamports, 4 410 000/1 470 000
   (Δ0/Δ0 partout), mint `7tqYz4LpTQbHY8BeRUNMdHmieWtwUK4JVjtoG4BRg1oX`, état `spikes/.state/t04.json`
+
+## Verdict Phase 0 (2026-11-13)
+- T1 GO, T2 GO, T4 GO, T5 GO, T7 GO, T6 PARTIEL, T8/T9/T10 NON TESTE (mocks), T11 NON TESTE (build bloque), T12/T13/T14 NON TESTE.
+- Recommandation architecture (SPEC 4) : A1 (PDA StreamerVault + attestation) reste la cible, car T1/T2/T4/T5/T7 sont GO et le programme est ecrit. MAIS T11 non verifie (build bloque par l'environnement Windows + verification ed25519 placeholder) -> ne pas shipper en mainnet sans : (1) build + tests Anchor verts sur CI/Linux, (2) vraie verification ed25519, (3) tests de securite T14. Si T11 echoue a la validation, appliquer A2 (wallet pre-genere) - l'interface WalletProvider est deja en place avec preGenerateWallet.
+- Reserves : T6 PARTIEL (job de graduation), T8/T9/T10 secrets humains, T13 fonds reels, T11/T14 build+securite.
