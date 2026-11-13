@@ -9,7 +9,8 @@
     "spike:T1": "tsx spikes/t01-launch.ts",
     "spike:T2": "tsx spikes/t02-fee-sharing.ts",
     "spike:T4": "tsx spikes/t04-split.ts",
-    "spike:T5": "tsx spikes/t05-cost.ts"
+    "spike:T5": "tsx spikes/t05-cost.ts",
+    "spike:T7": "tsx spikes/t07-recovery.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
