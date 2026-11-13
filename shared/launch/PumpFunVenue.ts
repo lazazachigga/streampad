@@ -5,7 +5,6 @@
 import {
   Connection,
   Keypair,
-  LAMPORTS_PER_SOL,
   PublicKey,
   Transaction,
   sendAndConfirmTransaction,
@@ -126,11 +125,11 @@ export class PumpFunVenue implements LaunchVenue {
       const curveInfo = await this.connection.getAccountInfo(curvePda);
       if (curveInfo !== null) {
         const curve = PUMP_SDK.decodeBondingCurve(curveInfo);
+        const globalInfo2 = await this.connection.getAccountInfo(GLOBAL_PDA);
+        if (globalInfo2 === null) throw new Error('global absent');
+        const global = PUMP_SDK.decodeGlobal(globalInfo2);
         const buyIxs = await PUMP_SDK.buyInstructions({
-          global: PUMP_SDK.decodeGlobal(await this.connection.getAccountInfo(GLOBAL_PDA).then((x) => {
-            if (x === null) throw new Error('global absent');
-            return x;
-          })),
+          global,
           bondingCurveAccountInfo: curveInfo,
           bondingCurve: curve,
           associatedUserAccountInfo: null,
@@ -149,6 +148,12 @@ export class PumpFunVenue implements LaunchVenue {
         );
       }
     }
+
+    const vaultPda = PublicKey.findProgramAddressSync(
+      [Buffer.from('creator-vault'), scPda.toBuffer()],
+      PUMP_PROGRAM_ID,
+    )[0];
+    const beforeVault = await this.connection.getBalance(vaultPda);
 
     const sweepIx = await PUMP_SDK.sweepCreatorFeeInstruction({
       payer: this.launcher.publicKey,
@@ -172,7 +177,9 @@ export class PumpFunVenue implements LaunchVenue {
       [this.launcher],
       { commitment: 'confirmed' },
     );
-    return { signature: sig, amount: BigInt(0) };
+    const afterVault = await this.connection.getBalance(vaultPda);
+    const distributed = beforeVault > afterVault ? beforeVault - afterVault : 0;
+    return { signature: sig, amount: BigInt(distributed) };
   }
 }
 
