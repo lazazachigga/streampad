@@ -1,6 +1,6 @@
 # PROGRESS.md
 
-_Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 GO** (commits 3f822c9, 1d14f89, a65789e)_
+_Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 GO, T6 PARTIEL** (commits 3f822c9, 1d14f89, a65789e, 7e18f95)_
 
 ## Phase en cours
 **Phase 0 — Matrice de faisabilité (T1 à T14)**
@@ -34,6 +34,8 @@ _Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 GO** (commits 3f822c
   balance réelle du vault, seuil retenu — le programme tait son seuil au plancher de rent)
 - [x] **T5 GO** (tentative 1/3) : coût distribute 5 000 (base) / 5 200 (priority) lamports =
   0,0884 % max < 1 % → seuil 1 % = 520 000, seuil retenu 4 454 400 (plancher programme)
+- [x] **T6 PARTIEL** : graduation réussie en 1 buy (synthetic migration) mais migration bloquée
+  (withdraw_authority = clé pump) → AMM-side non exercé ; job de graduation prévu dans le MVP
 - [x] **D8** : `PUMP_FEE_EVENT_AUTHORITY_PDA` prouvé absent de mainnet → `--maybe-clone`
 - [x] `scripts/fork-args.ts` + `scripts/start-fork.sh` corrigés et rejoués
 - [x] **D9** : `requestAirdrop` cassé (OS 10049) → helper `spikes/helpers/fund.ts` (transfert
@@ -42,8 +44,7 @@ _Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 GO** (commits 3f822c
   → `pnpm typecheck` EXIT=0
 
 ## Reste (ordre exact)
-1. T1 ✓ + T2 ✓ + T4 ✓ + T5 ✓ → **T6** (gradués AMM : `transfer_creator_fees_to_pump_v2` puis
-   `distribute`), **T7** (reprise < 60 s) sur le fork
+1. T1 ✓ + T2 ✓ + T4 ✓ + T5 ✓ + T6 PARTIEL → **T7** (reprise < 60 s) sur le fork
 2. T11/T14 (programme maison `StreamerVault`, validator local) → **T3** (PDA bénéficiaire du
    fee sharing, dépend de T11) → verdict T3, puis T12, T8/T9/T10
    avec mocks + `HUMAN_TODO.md` (aucun secret inventé) ; T13 → HUMAN_TODO
@@ -76,12 +77,11 @@ _Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 GO** (commits 3f822c
   le 429/403 alterne)
 
 ## Prochaine action exacte
-1. Vérifier `/health` du fork, puis écrire et lancer `spikes/t06-*.ts` : token **gradué**
-   (AMM) → `transfer_creator_fees_to_pump_v2` puis `distribute_creator_fees_v2` (F6).
-   La graduation d'un token coûte ~30 SOL de reserves (virtual) — soit pousser un coin local
-   jusqu'au grad, soit `simulateTransaction` sur un coin gradué existant du fork (option
-   PARTIEL autorisée par SPEC §3 T6).
-2. Ensuite T7 (reprise < 60 s), puis T11/T14 (programme maison) → T3.
+1. Vérifier `/health` du fork, puis écrire et lancer `spikes/t07-*.ts` : machine d'états de
+   récupération — simuler l'échec entre la création du token et `update_fee_shares_v2` (rpc
+   coupé / tx refusée) et vérifier que le wallet launcher n'accumule jamais de fees durablement
+   + reprise < 60 s.
+2. Ensuite T11/T14 (programme maison) → T3.
 
 ## Preuves T4 (2026-11-13)
 - Échec #1 : `total=0` — log `Insufficient fees for distribution. Minimum vault balance needed:
