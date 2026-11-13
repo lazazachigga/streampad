@@ -1,6 +1,6 @@
 # PROGRESS.md
 
-_Dernière mise a jour : 2026-11-13 — **T1 GO** (tentative 2/3)_
+_Dernière mise a jour : 2026-11-13 — **T1 GO + T2 GO** (commit 3f822c9 = n°1)_
 
 ## Phase en cours
 **Phase 0 — Matrice de faisabilité (T1 à T14)**
@@ -35,11 +35,10 @@ _Dernière mise a jour : 2026-11-13 — **T1 GO** (tentative 2/3)_
   → `pnpm typecheck` EXIT=0
 
 ## Reste (ordre exact)
-1. Fork qui tourne (relancé après redémarrage serveur) → `pnpm spike:T1` :
-   **échec #1** = `InsufficientFundsForRent { account_index: 5 }` (compte créé par la tx, pas
-   le fee payer) → identifier le compte via `spikes/_t01-debug.ts` (état avant/après) puis corriger
-2. T11/T14 (programme maison `StreamerVault`, validator local) → T3, puis T2/T4/T5/T6/T7, T12
-3. T8/T9/T10 avec mocks + `HUMAN_TODO.md` (aucun secret inventé) ; T13 → HUMAN_TODO
+1. T1 ✓ GO + T2 ✓ GO → **T4/T5/T6/T7** sur le fork (split 75/25 ±1, coût, gradués, reprise)
+2. T11/T14 (programme maison `StreamerVault`, validator local) → **T3** (PDA bénéficiaire du
+   fee sharing, dépend de T11) → verdict T3, puis T12, T8/T9/T10
+   avec mocks + `HUMAN_TODO.md` (aucun secret inventé) ; T13 → HUMAN_TODO
 4. Verdict Phase 0 dans FEASIBILITY.md + recommandation d'architecture (SPEC §4)
 5. Puis Phase 1..5 selon AGENTS.md (mode autonome)
 

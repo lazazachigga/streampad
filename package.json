@@ -6,7 +6,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "spike:T1": "tsx spikes/t01-launch.ts"
+    "spike:T1": "tsx spikes/t01-launch.ts",
+    "spike:T2": "tsx spikes/t02-fee-sharing.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
