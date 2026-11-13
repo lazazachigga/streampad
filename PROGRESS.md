@@ -100,3 +100,11 @@ _DerniÃ¨re mise a jour : 2026-11-13 â€” **T1 + T2 + T4 + T5 + T7 GO, T6 PARTIEL,
 - T1 GO, T2 GO, T4 GO, T5 GO, T7 GO, T6 PARTIEL, T8/T9/T10 NON TESTE (mocks), T11 NON TESTE (build bloque), T12/T13/T14 NON TESTE.
 - Recommandation architecture (SPEC 4) : A1 (PDA StreamerVault + attestation) reste la cible, car T1/T2/T4/T5/T7 sont GO et le programme est ecrit. MAIS T11 non verifie (build bloque par l'environnement Windows + verification ed25519 placeholder) -> ne pas shipper en mainnet sans : (1) build + tests Anchor verts sur CI/Linux, (2) vraie verification ed25519, (3) tests de securite T14. Si T11 echoue a la validation, appliquer A2 (wallet pre-genere) - l'interface WalletProvider est deja en place avec preGenerateWallet.
 - Reserves : T6 PARTIEL (job de graduation), T8/T9/T10 secrets humains, T13 fonds reels, T11/T14 build+securite.
+
+## Phase 5 (2026-11-13)
+- FINAL_REPORT.md ecrit (audit final §1-7).
+- docker-compose.yml (Postgres 16 + Redis 7).
+- .github/workflows/ci.yml (lint/typecheck/tests/anchor build/audit).
+- scripts/launch-platform-token.ts (squelette, execution manuelle).
+- README.md complet (< 15 min relance).
+- HUMAN_TODO.md a jour (§1-7).
