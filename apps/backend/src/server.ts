@@ -18,6 +18,11 @@ await app.register(cookie, { secret: process.env.COOKIE_SECRET ?? 'dev-cookie-se
 await app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
 
 app.get('/health', async () => ({ status: 'ok' }));
+app.get('/metrics', async () => ({
+  uptime: process.uptime(),
+  memory: process.memoryUsage(),
+  timestamp: new Date().toISOString(),
+}));
 app.get('/transparency', async () => ({ protocolFeesReceived: 0, buybacks: [] }));
 
 await app.register(authRoutes);
