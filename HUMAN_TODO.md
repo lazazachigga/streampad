@@ -14,7 +14,7 @@ Chaque bloc ci-dessous : quoi, pourquoi, où le créer (lien), quoi me donner (n
 ## 2. App OAuth Twitch (T8 + backend Phase 3)
 - **Pourquoi** : flux Authorization Code + PKCE réel, `GET /auth/twitch/login`.
 - **Créer sur** : https://dev.twitch.tv/console/apps → « Register Your Application »
-  - Name : `Launchpad Dev`
+  - Name : `StreamPad Dev`
   - OAuth Redirect URLs : `http://localhost:3000/auth/twitch/callback` (+ URL de prod plus tard)
   - Category : Application Integration
 - **Me donner** (dans `.env`, jamais dans le chat si possible) : `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`.

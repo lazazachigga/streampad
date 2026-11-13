@@ -1,7 +1,7 @@
 # AGENTS.md : règles permanentes du projet
 
 ## Mission
-Construire le launchpad décrit dans SPEC.md, de bout en bout, en une seule exécution autonome. En cas de conflit entre ce fichier et SPEC.md, **AGENTS.md prime** (notamment : les « STOP / attente de go » de SPEC.md sont supprimés, voir « Mode autonome »).
+Construire le StreamPad décrit dans SPEC.md, de bout en bout, en une seule exécution autonome. En cas de conflit entre ce fichier et SPEC.md, **AGENTS.md prime** (notamment : les « STOP / attente de go » de SPEC.md sont supprimés, voir « Mode autonome »).
 
 ## Mode autonome
 - Enchaîne les phases 0 à 5 de SPEC.md sans demander de confirmation entre elles.

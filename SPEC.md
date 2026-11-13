@@ -1,4 +1,4 @@
-# PROMPT MASTER : Launchpad Solana pour streamers Kick/Twitch
+# PROMPT MASTER : StreamPad Solana pour streamers Kick/Twitch
 # (wallet auto, claim des fees via OAuth, tokens lancés sur pump.fun)
 
 ---------------------------------------------------------------------
@@ -18,12 +18,12 @@ R8. **Honnêteté sur les échecs.** Si un test échoue, tu le dis tel quel, ave
 ---------------------------------------------------------------------
 ## 1. PRODUIT
 ---------------------------------------------------------------------
-Un launchpad pour streamers. Flux nominal :
+Un StreamPad pour streamers. Flux nominal :
 1. Le streamer se connecte avec **Twitch ou Kick** (OAuth).
 2. Un **wallet Solana est créé automatiquement** pour lui (embedded, non-custodial côté plateforme), ou il lie son propre wallet.
 3. Son token est **lancé sur pump.fun**. Les creator fees sont répartis par le **fee sharing pump.fun** : **75 % streamer, 25 % protocole**, réglé définitivement au lancement.
 4. La part du streamer arrive dans un compte lié à son **identité Twitch/Kick** (voir §4, deux architectures à tester). Il la **claim** en un clic depuis le dashboard.
-5. Les 25 % du protocole arrivent dans le `PROTOCOL_TREASURY`, qui finance les buybacks du **token du launchpad** (lui aussi lancé sur pump.fun) et l'infra.
+5. Les 25 % du protocole arrivent dans le `PROTOCOL_TREASURY`, qui finance les buybacks du **token du StreamPad** (lui aussi lancé sur pump.fun) et l'infra.
 6. **Phase 2 seulement** : tokens natifs avec bonding curve maison, créés uniquement pour offrir des creator fees plus élevés que pump.fun (voir §13).
 
 Priorité absolue : **seul le vrai propriétaire du compte Twitch/Kick peut recevoir la part streamer.** Les fees s'accumulent même si le streamer ne s'est pas encore connecté.
@@ -87,8 +87,8 @@ Réussite : claim valide OK ; rejeu du même nonce KO ; attestation expirée KO 
 **T12. Indexation.**
 Réussite : l'indexer détecte distributions et claims, rattache chaque montant au bon streamer/token, et reprend après un crash sans doublon ni trou (curseur de slot).
 
-**T13. Buyback du token du launchpad.**
-Réussite : achat réel de petite taille du token du launchpad depuis le treasury avec slippage max respecté, signature loguée.
+**T13. Buyback du token du StreamPad.**
+Réussite : achat réel de petite taille du token du StreamPad depuis le treasury avec slippage max respecté, signature loguée.
 
 **T14. Sécurité.**
 Tentative de forger une attestation, de rejouer un state OAuth, de claim avec le compte d'un autre streamer, de dépasser les rate limits. Tout doit échouer proprement.
@@ -151,7 +151,7 @@ Exigences : checked math, validation stricte des comptes (owner, seeds, signers)
 
 **Workers** :
 - `feeDistributor` : pour chaque token ACTIF, si le solde du creator vault dépasse le seuil de T5, exécute `transfer_creator_fees_to_pump_v2` (si gradué) puis `distribute_creator_fees_v2`. Idempotent, retries avec backoff, plafond de priority fee.
-- `treasuryManager` : buybacks du token du launchpad (seuil de SOL, slippage max, plafond par tx, logs `BuybackLog`).
+- `treasuryManager` : buybacks du token du StreamPad (seuil de SOL, slippage max, plafond par tx, logs `BuybackLog`).
 - `indexer` : événements du programme + transferts vers les vaults (Helius webhooks ou `logsSubscribe`), curseur de slot, reprise sur crash.
 
 **Modèle Prisma** : `User`, `OAuthIdentity`, `Wallet(type EMBEDDED|EXTERNAL)`, `Token(status, streamerBps, protocolBps, quoteMint)`, `FeeDistribution`, `FeeClaim`, `AttestationNonce`, `BuybackLog`, `AuditLog`, `IndexerCursor`. Le split de chaque `Token` est stocké et immuable.
@@ -178,7 +178,7 @@ UI sombre, responsive, états de chargement, d'erreur et de réseau lent, toasts
 - Conformité : le lancement de tokens liés à des personnes réelles et les buybacks peuvent avoir des implications légales (en France : AMF, régime PSAN/MiCA). Aucune communication ne présente les buybacks comme un rendement pour les holders. À faire valider par un juriste avant tout lancement public.
 
 ---------------------------------------------------------------------
-## 9. TOKEN DU LAUNCHPAD ET TREASURY
+## 9. TOKEN DU StreamPad ET TREASURY
 ---------------------------------------------------------------------
 - `scripts/launch-platform-token.ts` : exécuté manuellement une seule fois (nom, symbole, image, wallet launcher). Applique le même mécanisme de fee sharing si pertinent, à décider dans DECISIONS.md.
 - `PROTOCOL_TREASURY` (multisig) reçoit les 25 %. Répartition configurable : part buyback, part opérations (`OPS_SHARE_BPS`) pour RPC, Privy/Turnkey, serveurs.
@@ -205,7 +205,7 @@ UI sombre, responsive, états de chargement, d'erreur et de réseau lent, toasts
 - Phase 2 : programme Anchor (si A1) + tests complets. STOP.
 - Phase 3 : backend (OAuth Twitch, puis Kick, wallet provider, lancement avec machine d'états, feeDistributor, indexer). STOP.
 - Phase 4 : frontend (auth, dashboard, claim, puis pages token et lancement). STOP.
-- Phase 5 : treasuryManager, `/transparency`, token du launchpad, README complet, scripts de déploiement. STOP.
+- Phase 5 : treasuryManager, `/transparency`, token du StreamPad, README complet, scripts de déploiement. STOP.
 - Phase 6 (sur demande) : tokens natifs (§13).
 
 À la fin de chaque phase, tu livres : ce qui a été fait, ce qui est PROUVÉ (avec preuves), ce qui est NON TESTÉ, les risques ouverts, et la commande pour tout vérifier.

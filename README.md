@@ -1,6 +1,6 @@
-# Launchpad — Streamer token launchpad (Solana)
+# StreamPad — Streamer token StreamPad (Solana)
 
-Launchpad de tokens pump.fun pour streamers Twitch/Kick avec fee sharing 75/25 (streamer/protocole), wallet automatique, claim on-chain via programme Anchor.
+StreamPad de tokens pump.fun pour streamers Twitch/Kick avec fee sharing 75/25 (streamer/protocole), wallet automatique, claim on-chain via programme Anchor.
 
 ## Relance from scratch (< 15 min)
 
@@ -11,7 +11,7 @@ Launchpad de tokens pump.fun pour streamers Twitch/Kick avec fee sharing 75/25 (
 
 ### Installation
 ```bash
-cd launchpad
+cd StreamPad
 pnpm install
 cp .env.example .env   # puis remplir (voir HUMAN_TODO.md)
 ```

@@ -7,7 +7,7 @@
 - Raison : aucune option système possible sans droits admin ; tout reste natif Windows.
 
 ## D2 — Emplacement du projet
-- Choix : dossier dédié `Documents/Default Project/launchpad/`, git init dedans (le dossier parent n'est pas un repo et contient d'autres projets).
+- Choix : dossier dédié `Documents/Default Project/StreamPad/`, git init dedans (le dossier parent n'est pas un repo et contient d'autres projets).
 
 ## D3 — Versions outils (constaté le 2026-11-12)
 - Node v26.13.0, pnpm 11.x (global, appeler `pnpm.cmd`), git 2.56.0

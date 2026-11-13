@@ -18,7 +18,7 @@ _Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 + T7 GO, T6 PARTIEL,
 - Docs pump.fun : clone `vendor/pump-public-docs` (idl/ + docs/)
 
 ## Fait
-- [x] Création dossier projet `launchpad/` + `git init`
+- [x] Création dossier projet `StreamPad/` + `git init`
 - [x] `AGENTS.md`, `SPEC.md` écrits (copie fidèle des règles projet)
 - [x] Choix outillage Windows natif + outils installés et vérifiés
 - [x] Clone `pump-fun/pump-public-docs` ; IDL lus → DECISIONS.md (D4, faits F1–F8)

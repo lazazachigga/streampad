@@ -23,5 +23,5 @@
 - **Mitigation** : voir `HUMAN_TODO.md` §2, §3, §4.
 
 ## T13 — Buyback non testé
-- **Statut** : nécessite un wallet de test financé (≤ 0,5 SOL) et le token launchpad déployé.
+- **Statut** : nécessite un wallet de test financé (≤ 0,5 SOL) et le token StreamPad déployé.
 - **Mitigation** : voir `HUMAN_TODO.md` §1.
