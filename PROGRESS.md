@@ -1,6 +1,6 @@
 # PROGRESS.md
 
-_Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 + T7 GO, T6 PARTIEL** (commits 3f822c9, 1d14f89, a65789e, 7e18f95, 546a436)_
+_Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 + T7 GO, T6 PARTIEL, T8/T9/T10 NON TESTÉ (mocks + adaptateurs prêts, 14 tests verts)** (commits 3f822c9, 1d14f89, a65789e, 7e18f95, 546a436, 86247e1)_
 
 ## Phase en cours
 **Phase 0 — Matrice de faisabilité (T1 à T14)**
@@ -38,6 +38,9 @@ _Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 + T7 GO, T6 PARTIEL*
   (withdraw_authority = clé pump) → AMM-side non exercé ; job de graduation prévu dans le MVP
 - [x] **T7 GO** (tentative 1/3) : reprise mesurée 974 ms (< 60 000), total 5 239 ms, admin révoqué,
   fees accumulés balayés vers l'ancienne liste (aucune perte)
+- [x] **T8/T9/T10 NON TESTÉ (mocks)** : interfaces `OAuthProvider`/`WalletProvider` + adaptateurs
+  Twitch/Kick/Privy/Turnkey prêts à brancher + MockOAuthProvider/MockWalletProvider + 14 tests de
+  contrat verts (typecheck EXIT=0, vitest 14/14) ; secrets humains requis → HUMAN_TODO.md
 - [x] **D8** : `PUMP_FEE_EVENT_AUTHORITY_PDA` prouvé absent de mainnet → `--maybe-clone`
 - [x] `scripts/fork-args.ts` + `scripts/start-fork.sh` corrigés et rejoués
 - [x] **D9** : `requestAirdrop` cassé (OS 10049) → helper `spikes/helpers/fund.ts` (transfert
@@ -46,10 +49,11 @@ _Dernière mise a jour : 2026-11-13 — **T1 + T2 + T4 + T5 + T7 GO, T6 PARTIEL*
   → `pnpm typecheck` EXIT=0
 
 ## Reste (ordre exact)
-1. T1 ✓ + T2 ✓ + T4 ✓ + T5 ✓ + T7 ✓ + T6 PARTIEL → **T8/T9/T10** avec mocks + `HUMAN_TODO.md`
-   (aucun secret inventé), puis T11/T14 (programme maison) → **T3** (PDA bénéficiaire), puis T12
-2. Verdict Phase 0 dans FEASIBILITY.md + recommandation d'architecture (SPEC §4)
-3. Puis Phase 1..5 selon AGENTS.md (mode autonome)
+1. Build Anchor en cours (`cargo-build-sbf --force-tools-install`, toolchain corrompue) — à vérifier
+   quand la notification arrive ; puis tests Anchor (happy path + 7 rejets) pour T11.
+2. T12/T13/T14 reportés (indexer Phase 3, buyback fonds réels, sécurité dépend de T11).
+3. Verdict Phase 0 dans FEASIBILITY.md + recommandation d'architecture (SPEC §4).
+4. Puis Phase 1..5 selon AGENTS.md (mode autonome).
 
 ## Preuves accumulées
 - Agave 4.3.2 : `File::open(DIR)` → `Access is denied. (os error 5)` (test Rust minimal)
