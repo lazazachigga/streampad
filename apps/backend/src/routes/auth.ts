@@ -13,6 +13,14 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     if (!q.success) return reply.code(400).send({ error: 'bad query' });
     return { ok: true, code: q.data.code ?? null };
   });
+  app.get('/auth/x/login', async (_req, reply) => {
+    reply.redirect('https://twitter.com/i/oauth2/authorize?client_id=DEV&response_type=code');
+  });
+  app.get('/auth/x/callback', async (req, reply) => {
+    const q = CallbackQuery.safeParse(req.query);
+    if (!q.success) return reply.code(400).send({ error: 'bad query' });
+    return { ok: true, code: q.data.code ?? null };
+  });
   app.get('/auth/kick/login', async (_req, reply) => {
     reply.redirect('https://id.kick.com/oauth/authorize?client_id=DEV&response_type=code');
   });

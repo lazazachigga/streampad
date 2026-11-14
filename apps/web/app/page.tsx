@@ -1,6 +1,11 @@
+'use client';
+
+import { useWallet } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+
 const MOCK_TOKENS = [
   { mint: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', name: 'Alpha Stream', symbol: 'ALPHA', streamer: 'TwitchStreamer', platform: 'twitch', marketCap: '12.4K', change: '+8.2%' },
-  { mint: '9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E', name: 'KickClips', symbol: 'KICK', streamer: 'KickCreator', platform: 'kick', marketCap: '8.1K', change: '+3.1%' },
+  { mint: '9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E', name: 'KickClips', symbol: 'KICK', streamer: 'KickCreator', platform: 'x', marketCap: '8.1K', change: '+3.1%' },
   { mint: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', name: 'NightOwl', symbol: 'OWL', streamer: 'NightOwlTV', platform: 'twitch', marketCap: '24.7K', change: '-1.4%' },
 ];
 
@@ -8,17 +13,17 @@ function PlatformBadge({ platform }: { platform: string }) {
   if (platform === 'twitch') {
     return <span className="text-xs px-2 py-0.5 rounded bg-twitch/20 text-twitch-light font-medium">Twitch</span>;
   }
-  return <span className="text-xs px-2 py-0.5 rounded bg-kick/20 text-kick-light font-medium">Kick</span>;
+  return <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 font-medium">X</span>;
 }
 
 export default function HomePage() {
   return (
     <div className="max-w-7xl mx-auto px-6 py-10">
       <section className="mb-10">
-        <h1 className="text-4xl font-bold tracking-tight mb-2">Tokens de streamers</h1>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">Streamer tokens</h1>
         <p className="text-zinc-400 max-w-2xl">
-          Tokens pump.fun lancés par des streamers Twitch &amp; Kick. Fee sharing 75/25 définitif,
-          wallet automatique, claim on-chain. Aucune promesse de rendement.
+          pump.fun tokens launched by Twitch &amp; X streamers. Definitive 75/25 fee sharing,
+          automatic wallet, on-chain claims. No yield promises.
         </p>
       </section>
 
@@ -36,7 +41,7 @@ export default function HomePage() {
               </div>
               <PlatformBadge platform={t.platform} />
             </div>
-            <div className="text-sm text-zinc-400 mb-3">par {t.streamer}</div>
+            <div className="text-sm text-zinc-400 mb-3">by {t.streamer}</div>
             <div className="flex items-end justify-between">
               <div>
                 <div className="text-xs text-zinc-500">Market cap</div>
@@ -51,12 +56,12 @@ export default function HomePage() {
       </section>
 
       <section className="mt-12 rounded-xl border border-surface-3 bg-surface-1 p-6">
-        <h2 className="text-lg font-semibold mb-2">Comment ça marche</h2>
+        <h2 className="text-lg font-semibold mb-2">How it works</h2>
         <ol className="list-decimal list-inside space-y-1 text-sm text-zinc-400">
-          <li>Un streamer se connecte via Twitch ou Kick.</li>
-          <li>Un wallet Solana est créé automatiquement (non-custodial, export possible).</li>
-          <li>Il lance un token : split 75 % streamer / 25 % protocole, définitif.</li>
-          <li>Les fees accumulées sont distribuées puis claimables on-chain.</li>
+          <li>A streamer signs in with Twitch or X.</li>
+          <li>A Solana wallet is created automatically (non-custodial, exportable).</li>
+          <li>They launch a token: 75% streamer / 25% protocol, definitive.</li>
+          <li>Accrued fees are distributed and claimable on-chain.</li>
         </ol>
       </section>
     </div>
