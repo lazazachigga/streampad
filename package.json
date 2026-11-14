@@ -6,6 +6,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "build": "pnpm --filter @streampad/web build",
+    "dev": "pnpm --filter @streampad/web dev",
     "spike:T1": "tsx spikes/t01-launch.ts",
     "spike:T2": "tsx spikes/t02-fee-sharing.ts",
     "spike:T4": "tsx spikes/t04-split.ts",
