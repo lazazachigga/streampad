@@ -1,5 +1,8 @@
 // apps/backend/src/server.ts
 import 'dotenv/config';
+import { validateEnv } from './lib/env.js';
+validateEnv();
+
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
