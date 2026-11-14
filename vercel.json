@@ -3,8 +3,9 @@
   "services": {
     "backend": {
       "root": "apps/backend",
-      "buildCommand": "pnpm install && pnpm build",
-      "entrypoint": "dist/server.js"
+      "installCommand": "cd ../.. && pnpm install --filter @streampad/backend",
+      "buildCommand": "pnpm build",
+      "outputDirectory": "dist"
     },
     "web": {
       "root": "apps/web",
