@@ -17,12 +17,12 @@ export default function HomePage() {
       {/* Ticker */}
       <div className="border-b border-surface-3 bg-surface-1 overflow-hidden h-8 flex items-center">
         <div className="animate-marquee whitespace-nowrap text-xs font-mono text-text-secondary">
-          <span className="mx-4">@streamer a claim 12,4 SOL</span> /
+          <span className="mx-4">@streamer claimed 12.4 SOL</span> /
           <span className="mx-4">$ALPHA +184% 24h</span> /
-          <span className="mx-4">nouveau token : $OWL</span> /
-          <span className="mx-4">@streamer a claim 12,4 SOL</span> /
+          <span className="mx-4">new token: $OWL</span> /
+          <span className="mx-4">@streamer claimed 12.4 SOL</span> /
           <span className="mx-4">$ALPHA +184% 24h</span> /
-          <span className="mx-4">nouveau token : $OWL</span> /
+          <span className="mx-4">new token: $OWL</span> /
         </div>
       </div>
 
@@ -30,35 +30,35 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-6 py-16 md:py-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <div className="text-xs font-mono text-volt mb-4 tracking-widest">01 / 06 — HERO</div>
+            <div className="text-xs font-mono text-volt mb-4 tracking-widest">01 / 05 — HERO</div>
             <h1 className="text-5xl md:text-7xl font-display font-black tracking-tight leading-[0.9] mb-6">
-              TON STREAM.<br />
-              TON TOKEN.<br />
-              <span className="text-volt">TES FEES.</span>
+              YOUR STREAM.<br />
+              YOUR TOKEN.<br />
+              <span className="text-volt">YOUR FEES.</span>
             </h1>
             <p className="text-text-secondary text-lg mb-8 max-w-md">
-              75 % des fees pour toi, gravé on-chain. Connexion Twitch ou Kick, wallet créé tout seul, claim en un clic.
+              75% of fees for you, on-chain. Connect Twitch or Kick, wallet created automatically, claim in one click.
             </p>
             <div className="flex gap-3">
               <a href="/launch" className="px-6 py-3 bg-volt text-black text-sm font-bold uppercase tracking-wider hover:bg-volt-dark transition">
-                Lancer mon token
+                Launch my token
               </a>
               <a href="#reels" className="px-6 py-3 border border-surface-3 text-sm font-bold uppercase tracking-wider hover:bg-surface-2 transition">
-                Voir les clips
+                Watch clips
               </a>
             </div>
             <div className="mt-8 grid grid-cols-4 gap-4">
               <div>
                 <div className="text-2xl font-mono font-bold tabular-nums">12.4</div>
-                <div className="text-xs text-text-secondary">SOL versés</div>
+                <div className="text-xs text-text-secondary">SOL distributed</div>
               </div>
               <div>
                 <div className="text-2xl font-mono font-bold tabular-nums">42</div>
-                <div className="text-xs text-text-secondary">Tokens lancés</div>
+                <div className="text-xs text-text-secondary">Tokens launched</div>
               </div>
               <div>
                 <div className="text-2xl font-mono font-bold tabular-nums">18</div>
-                <div className="text-xs text-text-secondary">Streamers actifs</div>
+                <div className="text-xs text-text-secondary">Active streamers</div>
               </div>
               <div>
                 <div className="text-2xl font-mono font-bold tabular-nums">1.2K</div>
@@ -67,15 +67,15 @@ export default function HomePage() {
             </div>
           </div>
           <div className="rounded-sm border border-surface-3 bg-surface-1 p-4 aspect-[9/16] max-h-[500px] flex items-center justify-center">
-            <p className="text-text-secondary text-sm text-center">Reels placeholder<br />(vidéos à venir)</p>
+            <p className="text-text-secondary text-sm text-center">Reels placeholder<br />(videos coming soon)</p>
           </div>
         </div>
       </section>
 
       {/* Reels */}
       <section id="reels" className="max-w-7xl mx-auto px-6 py-16 border-t border-surface-3">
-        <div className="text-xs font-mono text-volt mb-4 tracking-widest">02 / 06 — REELS</div>
-        <h2 className="text-3xl font-display font-bold mb-6">Clips de streamers</h2>
+        <div className="text-xs font-mono text-volt mb-4 tracking-widest">02 / 05 — REELS</div>
+        <h2 className="text-3xl font-display font-bold mb-6">Streamer clips</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="aspect-[9/16] rounded-sm border border-surface-3 bg-surface-1 flex items-center justify-center">
@@ -87,16 +87,16 @@ export default function HomePage() {
 
       {/* Metrics */}
       <section className="max-w-7xl mx-auto px-6 py-16 border-t border-surface-3">
-        <div className="text-xs font-mono text-volt mb-4 tracking-widest">03 / 06 — MÉTRIQUES</div>
-        <h2 className="text-3xl font-display font-bold mb-6">Métriques live</h2>
+        <div className="text-xs font-mono text-volt mb-4 tracking-widest">03 / 05 — METRICS</div>
+        <h2 className="text-3xl font-display font-bold mb-6">Live metrics</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
-            { label: 'Fees versées aux streamers', value: '12.4 SOL', demo: true },
-            { label: 'Tokens lancés', value: '42', demo: true },
-            { label: 'Streamers actifs', value: '18', demo: true },
+            { label: 'Fees distributed to streamers', value: '12.4 SOL', demo: true },
+            { label: 'Tokens launched', value: '42', demo: true },
+            { label: 'Active streamers', value: '18', demo: true },
             { label: 'Volume 24h', value: '$1.2K', demo: true },
             { label: 'Claims', value: '1.2K', demo: true },
-            { label: 'Split définitif', value: '75 / 25', demo: false },
+            { label: 'Definitive split', value: '75 / 25', demo: false },
           ].map((m) => (
             <div key={m.label} className="rounded-sm border border-surface-3 bg-surface-1 p-5">
               <div className="text-xs text-text-secondary mb-1">{m.label}</div>
@@ -107,47 +107,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Streamer wall */}
-      <section className="max-w-7xl mx-auto px-6 py-16 border-t border-surface-3">
-        <div className="text-xs font-mono text-volt mb-4 tracking-widest">04 / 06 — MUR DES STREAMERS</div>
-        <h2 className="text-3xl font-display font-bold mb-6">Streamers</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_TOKENS.map((t) => (
-            <a
-              key={t.mint}
-              href={`/token/${t.mint}`}
-              className="block rounded-sm border border-surface-3 bg-surface-1 p-4 hover:border-volt transition"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <div className="font-semibold text-text-primary">{t.streamer}</div>
-                  <div className="text-xs text-text-secondary font-mono">{t.symbol}</div>
-                </div>
-                <PlatformBadge platform={t.platform} />
-              </div>
-              <div className="flex items-end justify-between mt-3">
-                <div>
-                  <div className="text-xs text-text-secondary">Market cap</div>
-                  <div className="font-mono text-sm">${t.marketCap}</div>
-                </div>
-                <div className={`text-sm font-mono ${t.change.startsWith('+') ? 'text-up' : 'text-down'}`}>
-                  {t.change}
-                </div>
-              </div>
-            </a>
-          ))}
-        </div>
-      </section>
-
       {/* How it works */}
       <section className="max-w-7xl mx-auto px-6 py-16 border-t border-surface-3">
-        <div className="text-xs font-mono text-volt mb-4 tracking-widest">05 / 06 — COMMENT ÇA MARCHE</div>
-        <h2 className="text-3xl font-display font-bold mb-6">3 étapes</h2>
+        <div className="text-xs font-mono text-volt mb-4 tracking-widest">04 / 05 — HOW IT WORKS</div>
+        <h2 className="text-3xl font-display font-bold mb-6">3 steps</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { step: '01', title: 'Connexion', desc: 'Twitch ou Kick, en 1 clic.' },
-            { step: '02', title: 'Wallet', desc: 'Créé automatiquement, non-custodial.' },
-            { step: '03', title: 'Claim', desc: 'Tes fees, en 1 clic.' },
+            { step: '01', title: 'Connect', desc: 'Twitch or Kick, in 1 click.' },
+            { step: '02', title: 'Wallet', desc: 'Created automatically, non-custodial.' },
+            { step: '03', title: 'Claim', desc: 'Your fees, in 1 click.' },
           ].map((s) => (
             <div key={s.step} className="rounded-sm border border-surface-3 bg-surface-1 p-6">
               <div className="text-4xl font-display font-black text-volt mb-2">{s.step}</div>
@@ -157,20 +125,20 @@ export default function HomePage() {
           ))}
         </div>
         <div className="mt-6 rounded-sm border border-surface-3 bg-surface-1 p-4 text-sm text-text-secondary">
-          <span className="font-mono text-volt">Vérifiable :</span> adresse du programme, lien Solscan, split définitif on-chain.
+          <span className="font-mono text-volt">Verifiable:</span> program address, Solscan link, definitive split on-chain.
         </div>
       </section>
 
       {/* Footer CTA */}
       <section className="max-w-7xl mx-auto px-6 py-16 border-t border-surface-3">
         <div className="rounded-sm border border-surface-3 bg-surface-1 p-8 text-center">
-          <h2 className="text-3xl font-display font-bold mb-4">Lance ton token</h2>
-          <p className="text-text-secondary mb-6">75 % pour toi. Pas négociable, pas modifiable.</p>
+          <h1 className="text-3xl font-display font-bold mb-4">Launch your token</h1>
+          <p className="text-text-secondary mb-6">75% for you. Non-negotiable, unchangeable.</p>
           <a href="/launch" className="inline-block px-8 py-3 bg-volt text-black text-sm font-bold uppercase tracking-wider hover:bg-volt-dark transition">
-            Lancer mon token
+            Launch my token
           </a>
           <p className="text-xs text-text-secondary mt-6">
-            Les tokens sont volatils. Tu peux perdre tout ce que tu investis. Ceci n&apos;est pas un conseil financier.
+            Tokens are volatile. You can lose everything you invest. This is not financial advice.
           </p>
         </div>
       </section>
