@@ -1,4 +1,19 @@
-const MOCK_TOKENS = [
+'use client';
+
+import { useEffect, useState } from 'react';
+import { endpoints } from '../lib/api';
+
+interface Token {
+  mint: string;
+  name: string;
+  symbol: string;
+  streamer: string;
+  platform: string;
+  marketCap: string;
+  change: string;
+}
+
+const MOCK_TOKENS: Token[] = [
   { mint: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', name: 'Alpha Stream', symbol: 'ALPHA', streamer: 'TwitchStreamer', platform: 'twitch', marketCap: '12.4K', change: '+8.2%' },
   { mint: '9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E', name: 'KickClips', symbol: 'KICK', streamer: 'KickCreator', platform: 'kick', marketCap: '8.1K', change: '+3.1%' },
   { mint: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', name: 'NightOwl', symbol: 'OWL', streamer: 'NightOwlTV', platform: 'twitch', marketCap: '24.7K', change: '-1.4%' },
@@ -12,6 +27,23 @@ function PlatformBadge({ platform }: { platform: string }) {
 }
 
 export default function HomePage() {
+  const [tokens, setTokens] = useState<Token[]>(MOCK_TOKENS);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<{ totalFeesDistributed: number; tokensLaunched: number; activeStreamers: number; volume24h: number; claimsCount: number } | null>(null);
+
+  useEffect(() => {
+    Promise.all([
+      endpoints.tokens().catch(() => ({ tokens: [] })),
+      endpoints.stats().catch(() => null),
+    ]).then(([t, s]) => {
+      if (t.tokens && Array.isArray(t.tokens) && t.tokens.length > 0) {
+        setTokens(t.tokens as Token[]);
+      }
+      if (s) setStats(s as typeof stats);
+      setLoading(false);
+    });
+  }, []);
+
   return (
     <div>
       {/* Ticker */}
@@ -49,19 +81,19 @@ export default function HomePage() {
             </div>
             <div className="mt-8 grid grid-cols-4 gap-4">
               <div>
-                <div className="text-2xl font-mono font-bold tabular-nums">12.4</div>
+                <div className="text-2xl font-mono font-bold tabular-nums">{stats?.totalFeesDistributed ?? '12.4'}</div>
                 <div className="text-xs text-text-secondary">SOL distributed</div>
               </div>
               <div>
-                <div className="text-2xl font-mono font-bold tabular-nums">42</div>
+                <div className="text-2xl font-mono font-bold tabular-nums">{stats?.tokensLaunched ?? 42}</div>
                 <div className="text-xs text-text-secondary">Tokens launched</div>
               </div>
               <div>
-                <div className="text-2xl font-mono font-bold tabular-nums">18</div>
+                <div className="text-2xl font-mono font-bold tabular-nums">{stats?.activeStreamers ?? 18}</div>
                 <div className="text-xs text-text-secondary">Active streamers</div>
               </div>
               <div>
-                <div className="text-2xl font-mono font-bold tabular-nums">1.2K</div>
+                <div className="text-2xl font-mono font-bold tabular-nums">{stats?.claimsCount ?? '1.2K'}</div>
                 <div className="text-xs text-text-secondary">Claims</div>
               </div>
             </div>
@@ -89,27 +121,64 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-6 py-16 border-t border-surface-3">
         <div className="text-xs font-mono text-volt mb-4 tracking-widest">03 / 05 — METRICS</div>
         <h2 className="text-3xl font-display font-bold mb-6">Live metrics</h2>
+        {loading ? (
+          <p className="text-text-secondary">Loading...</p>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { label: 'Fees distributed to streamers', value: stats ? `${stats.totalFeesDistributed} SOL` : '12.4 SOL', demo: !stats },
+              { label: 'Tokens launched', value: stats ? String(stats.tokensLaunched) : '42', demo: !stats },
+              { label: 'Active streamers', value: stats ? String(stats.activeStreamers) : '18', demo: !stats },
+              { label: 'Volume 24h', value: stats ? `$${stats.volume24h}` : '$1.2K', demo: !stats },
+              { label: 'Claims', value: stats ? String(stats.claimsCount) : '1.2K', demo: !stats },
+              { label: 'Definitive split', value: '75 / 25', demo: false },
+            ].map((m) => (
+              <div key={m.label} className="rounded-sm border border-surface-3 bg-surface-1 p-5">
+                <div className="text-xs text-text-secondary mb-1">{m.label}</div>
+                <div className="text-2xl font-mono font-bold tabular-nums">{m.value}</div>
+                {m.demo && <div className="text-[10px] text-volt mt-1 font-mono">DEMO</div>}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Tokens */}
+      <section className="max-w-7xl mx-auto px-6 py-16 border-t border-surface-3">
+        <div className="text-xs font-mono text-volt mb-4 tracking-widest">04 / 05 — TOKENS</div>
+        <h2 className="text-3xl font-display font-bold mb-6">Tokens</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { label: 'Fees distributed to streamers', value: '12.4 SOL', demo: true },
-            { label: 'Tokens launched', value: '42', demo: true },
-            { label: 'Active streamers', value: '18', demo: true },
-            { label: 'Volume 24h', value: '$1.2K', demo: true },
-            { label: 'Claims', value: '1.2K', demo: true },
-            { label: 'Definitive split', value: '75 / 25', demo: false },
-          ].map((m) => (
-            <div key={m.label} className="rounded-sm border border-surface-3 bg-surface-1 p-5">
-              <div className="text-xs text-text-secondary mb-1">{m.label}</div>
-              <div className="text-2xl font-mono font-bold tabular-nums">{m.value}</div>
-              {m.demo && <div className="text-[10px] text-volt mt-1 font-mono">DEMO</div>}
-            </div>
+          {tokens.map((t) => (
+            <a
+              key={t.mint}
+              href={`/token/${t.mint}`}
+              className="group block rounded-sm border border-surface-3 bg-surface-1 p-5 hover:border-volt transition"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <div className="font-semibold text-text-primary">{t.name}</div>
+                  <div className="text-xs text-text-secondary font-mono">{t.symbol}</div>
+                </div>
+                <PlatformBadge platform={t.platform} />
+              </div>
+              <div className="text-sm text-text-secondary mb-3">by {t.streamer}</div>
+              <div className="flex items-end justify-between">
+                <div>
+                  <div className="text-xs text-text-secondary">Market cap</div>
+                  <div className="font-mono text-sm">${t.marketCap}</div>
+                </div>
+                <div className={`text-sm font-mono ${t.change.startsWith('+') ? 'text-up' : 'text-down'}`}>
+                  {t.change}
+                </div>
+              </div>
+            </a>
           ))}
         </div>
       </section>
 
       {/* How it works */}
       <section className="max-w-7xl mx-auto px-6 py-16 border-t border-surface-3">
-        <div className="text-xs font-mono text-volt mb-4 tracking-widest">04 / 05 — HOW IT WORKS</div>
+        <div className="text-xs font-mono text-volt mb-4 tracking-widest">05 / 05 — HOW IT WORKS</div>
         <h2 className="text-3xl font-display font-bold mb-6">3 steps</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {[

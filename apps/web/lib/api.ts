@@ -17,6 +17,7 @@ export async function api<T = unknown>(path: string, init?: RequestInit): Promis
 export const endpoints = {
   health: () => api<{ status: string }>('/health'),
   metrics: () => api('/metrics'),
+  stats: () => api('/stats'),
   tokens: () => api<{ tokens: unknown[] }>('/tokens'),
   token: (mint: string) => api(`/tokens/${mint}`),
   launch: (body: unknown) => api('/tokens/launch', { method: 'POST', body: JSON.stringify(body) }),
