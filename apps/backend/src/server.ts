@@ -27,6 +27,21 @@ app.get('/metrics', async () => ({
   timestamp: new Date().toISOString(),
 }));
 app.get('/transparency', async () => ({ protocolFeesReceived: 0, buybacks: [] }));
+app.get('/stats', async () => ({
+  totalFeesDistributed: 0,
+  tokensLaunched: 0,
+  activeStreamers: 0,
+  volume24h: 0,
+  claimsCount: 0,
+}));
+app.get('/activity', async () => ({ events: [] }));
+app.get('/reels', async () => ({ reels: [] }));
+app.post('/waitlist', async (req, reply) => {
+  const body = req.body as { email?: string; consent?: boolean; honeypot?: string };
+  if (body.honeypot) return reply.code(400).send({ error: 'bot detected' });
+  if (!body.email || !body.consent) return reply.code(400).send({ error: 'email and consent required' });
+  return { ok: true };
+});
 
 await app.register(authRoutes);
 await app.register(walletRoutes);

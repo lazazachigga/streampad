@@ -4,14 +4,15 @@ import { Header, Footer } from '../components/layout';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'StreamPad — Streamer tokens on Solana',
-  description: 'Launch pump.fun tokens for Twitch & X streamers. 75/25 fee sharing, automatic wallet, on-chain claims.',
+  title: 'StreamPad : le launchpad des streamers',
+  description: 'Le launchpad des streamers Twitch et Kick : wallet créé automatiquement, 75 % des fees pour toi, claim en un clic.',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-surface-0 text-zinc-100 min-h-screen antialiased">
+    <html lang="fr" className="dark">
+      <body className="bg-surface-0 text-text-primary min-h-screen antialiased">
         <SolanaWalletProvider>
           <Header />
           <main className="min-h-[calc(100vh-4rem)]">{children}</main>
