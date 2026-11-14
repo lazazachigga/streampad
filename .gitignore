@@ -20,3 +20,5 @@ probe.out
 probe.err
 # État local des spikes (contient des keypairs jetables du fork — jamais committé)
 spikes/.state/
+
+.vercel
