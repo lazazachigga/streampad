@@ -21,5 +21,5 @@ jobs:
         run: rustc --version && cargo --version
 
       - name: Build with Cargo (no Anchor CLI needed)
-        working-directory: programs/streamer-vault
-        run: cargo build --release 2>&1 | tail -30
+        working-directory: programs
+        run: cargo build --release -p streamer-vault 2>&1 | tail -30
