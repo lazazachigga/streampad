@@ -16,6 +16,12 @@ const EnvSchema = z.object({
   TWITCH_CLIENT_SECRET: z.string().optional(),
   X_CLIENT_ID: z.string().optional(),
   X_CLIENT_SECRET: z.string().optional(),
+  KICK_CLIENT_ID: z.string().optional(),
+  KICK_CLIENT_SECRET: z.string().optional(),
+  PRIVY_APP_ID: z.string().optional(),
+  PRIVY_APP_SECRET: z.string().optional(),
+  LAUNCHER_WALLET_SECRET: z.string().optional(),
+  PROTOCOL_TREASURY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
