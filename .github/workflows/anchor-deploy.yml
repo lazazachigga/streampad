@@ -25,9 +25,11 @@ jobs:
         run: |
           solana config set --url https://api.devnet.solana.com
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-          echo "Wallet: $(solana address)"
-          solana airdrop 2 2>&1 || echo "Airdrop failed"
-          sleep 5
+          WALLET=$(solana address)
+          echo "Wallet: $WALLET"
+          # Request SOL from faucet
+          solana airdrop 2 2>&1 || echo "Airdrop 1 failed"
+          sleep 10
           echo "Balance: $(solana balance)"
 
       - name: Build program
@@ -39,8 +41,10 @@ jobs:
           find . -name "*.so" 2>/dev/null
           echo "=== target/release ==="
           ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
+          echo "=== target/deploy ==="
+          ls -la target/deploy/ 2>/dev/null || echo "No target/deploy"
 
-      - name: Deploy to Devnet
+      - name: Check .so file
         working-directory: programs
         run: |
           SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
@@ -48,20 +52,26 @@ jobs:
             SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
           fi
           echo "Found .so: $SO_FILE"
-          
           if [ -z "$SO_FILE" ]; then
             echo "ERROR: No .so file found!"
             find . -name "*.so" 2>/dev/null
             exit 1
           fi
-          
           ls -la "$SO_FILE"
+          echo "SO_FILE=$SO_FILE" >> $GITHUB_ENV
+
+      - name: Deploy to Devnet
+        working-directory: programs
+        run: |
+          echo "Balance before deploy:"
+          solana balance
           
           solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
           echo "PROGRAM_ID=$PROGRAM_ID"
           
-          echo "Deploying..."
+          SO_FILE="${{ env.SO_FILE }}"
+          echo "Deploying $SO_FILE..."
           solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
           
           echo "=========================================="
