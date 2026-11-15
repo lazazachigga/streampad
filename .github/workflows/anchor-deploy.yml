@@ -25,11 +25,11 @@ jobs:
         run: |
           solana config set --url https://api.devnet.solana.com
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-          # Request SOL from faucet (multiple attempts)
-          for i in 1 2 3 4 5; do
+          # Request SOL from faucet (multiple attempts with long delays)
+          for i in 1 2 3; do
             echo "Airdrop attempt $i..."
             solana airdrop 2 2>&1 && break
-            sleep 15
+            sleep 30
           done
           echo "Balance:"
           solana balance
@@ -38,9 +38,11 @@ jobs:
         working-directory: programs
         run: |
           cargo build --release -p streamer-vault 2>&1 | tail -20
-          echo "Build complete"
-          echo "Searching for .so files:"
+          echo "=== Build complete ==="
+          echo "=== Searching for .so files ==="
           find . -name "*.so" 2>/dev/null
+          echo "=== target directory ==="
+          ls -la target/release/ 2>/dev/null | head -20
 
       - name: Deploy to Devnet
         working-directory: programs
@@ -60,7 +62,7 @@ jobs:
           
           solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
-          echo "PROGRAM_ID=$PROGRAM_ID" >> $GITHUB_ENV
+          echo "PROGRAM_ID=$PROGRAM_ID"
           
           echo "Deploying..."
           solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
