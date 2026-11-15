@@ -221,6 +221,50 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: 'state provider mismatch' });
     }
 
-    return { ok: true, code: q.data.code };
+    const clientId = process.env.KICK_CLIENT_ID;
+    const clientSecret = process.env.KICK_CLIENT_SECRET;
+    const redirectUri = `${process.env.OAUTH_REDIRECT_BASE_URL ?? 'http://localhost:4000'}/auth/kick/callback`;
+    if (!clientId || !clientSecret) return reply.code(500).send({ error: 'Kick not configured' });
+
+    const body = new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code: q.data.code,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri,
+    });
+    const tokenRes = await fetch('https://id.kick.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error('Kick token exchange failed:', errText);
+      return reply.code(400).send({ error: 'token exchange failed' });
+    }
+    const tokenJson = (await tokenRes.json()) as { access_token: string };
+    const userRes = await fetch('https://api.kick.com/public/v1/users', {
+      headers: { Authorization: `Bearer ${tokenJson.access_token}` },
+    });
+    if (!userRes.ok) {
+      const errText = await userRes.text();
+      console.error('Kick user fetch failed:', errText);
+      return reply.code(400).send({ error: 'user fetch failed' });
+    }
+    const userJson = (await userRes.json()) as { data: Array<{ user_id: number; username: string }> };
+    const user = userJson.data?.[0];
+    if (!user) return reply.code(400).send({ error: 'user not found' });
+
+    reply.setCookie('session', JSON.stringify({ provider: 'kick', userId: String(user.user_id), login: user.username }), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60,
+    });
+
+    const frontendUrl = process.env.WEB_ORIGIN ?? 'https://streampad.wtf';
+    return reply.redirect(`${frontendUrl}/streamer?provider=kick&login=${encodeURIComponent(user.username)}`);
   });
 }
