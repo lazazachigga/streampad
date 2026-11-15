@@ -17,9 +17,6 @@ jobs:
         with:
           toolchain: 1.82.0
 
-      - name: Check Rust
-        run: rustc --version && cargo --version
-
-      - name: Build with Cargo (no Anchor CLI needed)
+      - name: Build with Cargo
         working-directory: programs
-        run: cargo build --release -p streamer-vault 2>&1 | tail -30
+        run: cargo build --release -p streamer-vault 2>&1 | tail -20
