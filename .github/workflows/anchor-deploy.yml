@@ -21,30 +21,19 @@ jobs:
           sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Configure Solana for Devnet
+      - name: Configure Solana
         run: |
           solana config set --url https://api.devnet.solana.com
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-          echo "Wallet: $(solana address)"
-
-      - name: Request SOL from faucet
-        run: |
           WALLET=$(solana address)
-          # Try faucet multiple times
+          echo "Wallet: $WALLET"
+          # Request SOL
           for i in 1 2 3; do
-            echo "Attempt $i..."
-            RESULT=$(curl -s -X POST "https://api.devnet.solana.com" \
-              -H "Content-Type: application/json" \
-              -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"requestAirdrop\",\"params\":[\"$WALLET\",2000000000]}" 2>&1)
-            echo "Result: $RESULT"
-            if echo "$RESULT" | grep -q "result"; then
-              echo "Airdrop successful!"
-              break
-            fi
-            sleep 20
+            echo "Airdrop attempt $i..."
+            solana airdrop 2 2>&1 && break
+            sleep 10
           done
-          sleep 10
-          echo "Final balance:"
+          echo "Balance:"
           solana balance
 
       - name: Build program
@@ -83,10 +72,3 @@ jobs:
           echo "=========================================="
           echo "PROGRAM ID: $PROGRAM_ID"
           echo "=========================================="
-
-      - name: Output Program ID
-        run: |
-          echo "Add this to Render env vars:"
-          echo "STREAMER_VAULT_PROGRAM_ID=$PROGRAM_ID"
-          echo ""
-          echo "Program deployed to devnet!"
