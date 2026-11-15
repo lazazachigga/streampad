@@ -202,8 +202,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     const redirectUri = `${process.env.OAUTH_REDIRECT_BASE_URL ?? 'http://localhost:4000'}/auth/kick/callback`;
     if (!clientId) return reply.code(500).send({ error: 'KICK_CLIENT_ID not configured' });
 
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateState();
-    oauthStates.set(state, { provider: 'kick', codeVerifier: '', createdAt: Date.now() });
+
+    oauthStates.set(state, { provider: 'kick', codeVerifier, createdAt: Date.now() });
 
     const url = new URL('https://id.kick.com/oauth/authorize');
     url.searchParams.set('client_id', clientId);
@@ -211,6 +214,8 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', 'user:read');
     url.searchParams.set('state', state);
+    url.searchParams.set('code_challenge', codeChallenge);
+    url.searchParams.set('code_challenge_method', 'S256');
     reply.redirect(url.toString());
   });
 
@@ -239,6 +244,7 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       code: q.data.code,
       grant_type: 'authorization_code',
       redirect_uri: redirectUri,
+      code_verifier: stateData.codeVerifier,
     });
     const tokenRes = await fetch('https://id.kick.com/oauth/token', {
       method: 'POST',
