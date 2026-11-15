@@ -87,7 +87,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     });
-    if (!tokenRes.ok) return reply.code(400).send({ error: 'token exchange failed' });
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error('Twitch token exchange failed:', errText);
+      return reply.code(400).send({ error: 'token exchange failed', details: errText });
+    }
     const tokenJson = (await tokenRes.json()) as { access_token: string };
     const userRes = await fetch(TWITCH_USERS, {
       headers: { Authorization: `Bearer ${tokenJson.access_token}`, 'Client-Id': clientId },
@@ -156,7 +160,6 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
     const body = new URLSearchParams({
       client_id: clientId,
-      client_secret: clientSecret,
       code: q.data.code,
       grant_type: 'authorization_code',
       redirect_uri: redirectUri,
@@ -167,7 +170,11 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
     });
-    if (!tokenRes.ok) return reply.code(400).send({ error: 'token exchange failed' });
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error('X token exchange failed:', errText);
+      return reply.code(400).send({ error: 'token exchange failed', details: errText });
+    }
     const tokenJson = (await tokenRes.json()) as { access_token: string };
     const userRes = await fetch(`${X_USERS}?user.fields=id,username`, {
       headers: { Authorization: `Bearer ${tokenJson.access_token}` },
