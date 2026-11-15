@@ -25,12 +25,17 @@ jobs:
         run: |
           solana config set --url https://api.devnet.solana.com
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-          # Request SOL from faucet (multiple attempts with long delays)
-          for i in 1 2 3; do
-            echo "Airdrop attempt $i..."
-            solana airdrop 2 2>&1 && break
-            sleep 30
-          done
+          WALLET=$(solana address)
+          echo "Wallet: $WALLET"
+          # Use faucet API directly
+          curl -X POST https://faucet.solana.com/api/v1/airdrop \
+            -H "Content-Type: application/json" \
+            -d "{\"pubkey\":\"$WALLET\",\"amount\":2}" 2>&1 || true
+          sleep 10
+          curl -X POST https://faucet.solana.com/api/v1/airdrop \
+            -H "Content-Type: application/json" \
+            -d "{\"pubkey\":\"$WALLET\",\"amount\":2}" 2>&1 || true
+          sleep 10
           echo "Balance:"
           solana balance
 
@@ -38,11 +43,9 @@ jobs:
         working-directory: programs
         run: |
           cargo build --release -p streamer-vault 2>&1 | tail -20
-          echo "=== Build complete ==="
-          echo "=== Searching for .so files ==="
+          echo "Build complete"
+          echo "=== .so files ==="
           find . -name "*.so" 2>/dev/null
-          echo "=== target directory ==="
-          ls -la target/release/ 2>/dev/null | head -20
 
       - name: Deploy to Devnet
         working-directory: programs
