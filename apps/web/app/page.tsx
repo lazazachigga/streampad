@@ -15,14 +15,7 @@ interface Token {
   change: string;
 }
 
-const MOCK_TOKENS: Token[] = [
-  { mint: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', name: 'Alpha Stream', symbol: 'ALPHA', streamer: 'TwitchStreamer', platform: 'twitch', marketCap: '12.4K', change: '+8.2%' },
-  { mint: '9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E', name: 'KickClips', symbol: 'KICK', streamer: 'KickCreator', platform: 'kick', marketCap: '8.1K', change: '+3.1%' },
-  { mint: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', name: 'NightOwl', symbol: 'OWL', streamer: 'NightOwlTV', platform: 'twitch', marketCap: '24.7K', change: '-1.4%' },
-  { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', name: 'SolKing', symbol: 'SKING', streamer: 'SolKingTV', platform: 'kick', marketCap: '41.2K', change: '+15.7%' },
-  { mint: 'So11111111111111111111111111111111111111112', name: 'MoonStream', symbol: 'MOON', streamer: 'MoonStreamer', platform: 'twitch', marketCap: '67.8K', change: '+22.3%' },
-  { mint: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', name: 'ClipMaster', symbol: 'CLIP', streamer: 'ClipMasterPro', platform: 'kick', marketCap: '15.3K', change: '+5.9%' },
-];
+const MOCK_TOKENS: Token[] = [];
 
 function PlatformBadge({ platform }: { platform: string }) {
   if (platform === 'twitch') {
@@ -44,7 +37,7 @@ function PlatformBadge({ platform }: { platform: string }) {
 function AuthButtons({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const padding = size === 'lg' ? 'px-10 py-5 text-lg' : size === 'sm' ? 'px-5 py-2.5 text-sm' : 'px-7 py-3.5 text-base';
   return (
-    <div className="flex flex-col sm:flex-row gap-4">
+    <div className="flex flex-col sm:flex-row gap-4 flex-wrap justify-center">
       <a
         href={`${BACKEND}/auth/twitch/login`}
         className={`group relative flex items-center justify-center gap-3 ${padding} rounded-2xl bg-gradient-to-r from-twitch to-twitch-dark text-white font-bold overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-twitch/40 active:scale-[0.98]`}
@@ -53,7 +46,17 @@ function AuthButtons({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         <svg className="w-6 h-6 relative z-10 group-hover:rotate-12 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
           <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" />
         </svg>
-        <span className="relative z-10">Continue with Twitch</span>
+        <span className="relative z-10">Twitch</span>
+      </a>
+      <a
+        href={`${BACKEND}/auth/kick/login`}
+        className={`group relative flex items-center justify-center gap-3 ${padding} rounded-2xl bg-gradient-to-r from-kick to-kick-dark text-black font-bold overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-kick/40 active:scale-[0.98]`}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-black/0 via-black/10 to-black/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+        <svg className="w-6 h-6 relative z-10 group-hover:rotate-12 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+        </svg>
+        <span className="relative z-10">Kick</span>
       </a>
       <a
         href={`${BACKEND}/auth/x/login`}
@@ -63,7 +66,7 @@ function AuthButtons({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         <svg className="w-6 h-6 relative z-10 group-hover:rotate-12 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
         </svg>
-        <span className="relative z-10">Continue with X</span>
+        <span className="relative z-10">X</span>
       </a>
     </div>
   );
@@ -226,10 +229,10 @@ export default function HomePage() {
 
               <div className="mt-12 grid grid-cols-2 sm:grid-cols-4 gap-6">
                 {[
-                  { value: stats?.totalFeesDistributed ?? '12.4', label: 'SOL distributed', color: 'volt' },
-                  { value: stats?.tokensLaunched ?? 42, label: 'Tokens launched', color: 'twitch' },
-                  { value: stats?.activeStreamers ?? 18, label: 'Active streamers', color: 'kick' },
-                  { value: stats?.claimsCount ?? '1.2K', label: 'Claims', color: 'up' },
+                  { value: stats?.totalFeesDistributed ?? 0, label: 'SOL distributed', color: 'volt' },
+                  { value: stats?.tokensLaunched ?? 0, label: 'Tokens launched', color: 'twitch' },
+                  { value: stats?.activeStreamers ?? 0, label: 'Active streamers', color: 'kick' },
+                  { value: stats?.claimsCount ?? 0, label: 'Claims', color: 'up' },
                 ].map((m, i) => (
                   <div key={m.label} className="group relative" style={{ animationDelay: `${i * 0.1}s` }}>
                     <div className={`text-3xl md:text-4xl font-mono font-black tabular-nums text-${m.color} group-hover:scale-110 transition-transform duration-300`}>
@@ -267,23 +270,31 @@ export default function HomePage() {
 
                   {/* Token preview cards */}
                   <div className="space-y-3">
-                    {MOCK_TOKENS.slice(0, 3).map((t, i) => (
-                      <div key={t.mint} className="flex items-center justify-between p-3 rounded-xl bg-surface-0/50 border border-surface-3/50 hover:border-volt/30 transition-all hover:translate-x-1 group">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${t.platform === 'twitch' ? 'bg-twitch/20 text-twitch-light' : 'bg-kick/20 text-kick-light'}`}>
-                            ${t.symbol.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="font-semibold text-sm group-hover:text-volt transition">{t.name}</div>
-                            <div className="text-xs text-text-secondary">${t.symbol} · by {t.streamer}</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-bold">${t.marketCap}</div>
-                          <div className={`text-xs font-mono ${t.change.startsWith('+') ? 'text-up' : 'text-down'}`}>{t.change}</div>
-                        </div>
+                    {tokens.length === 0 ? (
+                      <div className="text-center py-8 text-text-secondary">
+                        <div className="text-4xl mb-3">🚀</div>
+                        <div className="font-semibold">No tokens launched yet</div>
+                        <div className="text-xs mt-1">Be the first to launch!</div>
                       </div>
-                    ))}
+                    ) : (
+                      tokens.slice(0, 3).map((t, i) => (
+                        <div key={t.mint} className="flex items-center justify-between p-3 rounded-xl bg-surface-0/50 border border-surface-3/50 hover:border-volt/30 transition-all hover:translate-x-1 group">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${t.platform === 'twitch' ? 'bg-twitch/20 text-twitch-light' : t.platform === 'kick' ? 'bg-kick/20 text-kick-light' : 'bg-white/20 text-white'}`}>
+                              ${t.symbol.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-sm group-hover:text-volt transition">{t.name}</div>
+                              <div className="text-xs text-text-secondary">${t.symbol} · @{t.streamer}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-mono font-bold">${t.marketCap}</div>
+                            <div className={`text-xs font-mono ${t.change.startsWith('+') ? 'text-up' : 'text-down'}`}>{t.change}</div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   {/* Stats bar */}
@@ -373,7 +384,17 @@ export default function HomePage() {
           </a>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tokens.map((t, i) => (
+          {tokens.length === 0 ? (
+            <div className="col-span-full text-center py-16">
+              <div className="text-6xl mb-4">🚀</div>
+              <div className="text-2xl font-display font-bold mb-2">No tokens launched yet</div>
+              <p className="text-text-secondary mb-6">Be the first streamer to launch a token on StreamPad.</p>
+              <a href="/launch" className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-volt to-volt-dark text-black font-bold hover:shadow-lg hover:shadow-volt/30 transition-all hover:scale-105">
+                Launch your token
+              </a>
+            </div>
+          ) : (
+            tokens.map((t, i) => (
             <a
               key={t.mint}
               href={`/token/${t.mint}`}
@@ -406,7 +427,9 @@ export default function HomePage() {
                 </div>
               </div>
             </a>
-          ))}
+          ))
+          )
+      }
         </div>
       </section>
 
@@ -423,11 +446,11 @@ export default function HomePage() {
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { label: 'Fees distributed to streamers', value: stats ? `${stats.totalFeesDistributed} SOL` : '12.4 SOL', icon: '💰', gradient: 'from-volt to-kick' },
-              { label: 'Tokens launched', value: stats ? String(stats.tokensLaunched) : '42', icon: '🚀', gradient: 'from-twitch to-volt' },
-              { label: 'Active streamers', value: stats ? String(stats.activeStreamers) : '18', icon: '🎮', gradient: 'from-kick to-up' },
-              { label: 'Volume 24h', value: stats ? `$${stats.volume24h}` : '$1.2K', icon: '📊', gradient: 'from-volt to-twitch' },
-              { label: 'Claims processed', value: stats ? String(stats.claimsCount) : '1.2K', icon: '✅', gradient: 'from-up to-kick' },
+              { label: 'Fees distributed to streamers', value: stats ? `${stats.totalFeesDistributed} SOL` : '0 SOL', icon: '💰', gradient: 'from-volt to-kick' },
+              { label: 'Tokens launched', value: stats ? String(stats.tokensLaunched) : '0', icon: '🚀', gradient: 'from-twitch to-volt' },
+              { label: 'Active streamers', value: stats ? String(stats.activeStreamers) : '0', icon: '🎮', gradient: 'from-kick to-up' },
+              { label: 'Volume 24h', value: stats ? `$${stats.volume24h}` : '$0', icon: '📊', gradient: 'from-volt to-twitch' },
+              { label: 'Claims processed', value: stats ? String(stats.claimsCount) : '0', icon: '✅', gradient: 'from-up to-kick' },
               { label: 'Definitive split', value: '75 / 25', icon: '⚖️', gradient: 'from-twitch to-kick' },
             ].map((m, i) => (
               <div
