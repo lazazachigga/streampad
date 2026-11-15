@@ -27,16 +27,23 @@ jobs:
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
           WALLET=$(solana address)
           echo "Wallet: $WALLET"
-          # Use faucet API directly
-          curl -X POST https://faucet.solana.com/api/v1/airdrop \
-            -H "Content-Type: application/json" \
-            -d "{\"pubkey\":\"$WALLET\",\"amount\":2}" 2>&1 || true
-          sleep 10
-          curl -X POST https://faucet.solana.com/api/v1/airdrop \
-            -H "Content-Type: application/json" \
-            -d "{\"pubkey\":\"$WALLET\",\"amount\":2}" 2>&1 || true
-          sleep 10
-          echo "Balance:"
+          
+          # Use multiple faucet endpoints
+          for i in 1 2 3; do
+            echo "Attempt $i..."
+            curl -s -X POST "https://api.devnet.solana.com" \
+              -H "Content-Type: application/json" \
+              -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"requestAirdrop\",\"params\":[\"$WALLET\",2000000000]}" 2>&1 || true
+            sleep 10
+            BALANCE=$(solana balance 2>&1)
+            echo "Balance: $BALANCE"
+            if echo "$BALANCE" | grep -q "SOL"; then
+              echo "Got SOL, continuing..."
+              break
+            fi
+          done
+          
+          echo "Final balance:"
           solana balance
 
       - name: Build program
