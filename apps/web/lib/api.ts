@@ -1,5 +1,5 @@
 // apps/web/lib/api.ts
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://streampad-backend.onrender.com';
+const BASE = 'https://streampad-backend.onrender.com';
 
 export async function api<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {

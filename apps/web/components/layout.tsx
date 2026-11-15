@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useWallet } from '../lib/wallet';
 import { useMemo } from 'react';
 
-const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? 'https://streampad-backend.onrender.com';
+const BACKEND = 'https://streampad-backend.onrender.com';
 
 export function Header() {
   const { publicKey, disconnect, connect } = useWallet();

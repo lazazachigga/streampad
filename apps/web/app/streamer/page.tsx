@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? 'https://streampad-backend.onrender.com';
+const BACKEND = 'https://streampad-backend.onrender.com';
 
 export default function StreamerPage() {
   return (

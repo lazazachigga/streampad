@@ -1,6 +1,6 @@
 'use client';
 
-const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? 'https://streampad-backend.onrender.com';
+const BACKEND = 'https://streampad-backend.onrender.com';
 
 export default function LoginPage() {
   return (
