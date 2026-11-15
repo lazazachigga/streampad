@@ -1,4 +1,4 @@
-name: Anchor Build & Info
+name: Anchor Build
 
 on:
   push:
@@ -16,13 +16,13 @@ jobs:
         with:
           toolchain: 1.82.0
 
-      - name: Build program
+      - name: Build with Cargo
         working-directory: programs
         run: |
-          cargo build --release -p streamer-vault 2>&1 | tail -20
+          cargo build --release -p streamer-vault 2>&1 | tail -30
           echo "=== Build complete ==="
           echo "=== .so files ==="
           find . -name "*.so" 2>/dev/null
           echo "=== target/release ==="
-          ls -la target/release/ 2>/dev/null | head -20
+          ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
           echo "=== Done ==="
