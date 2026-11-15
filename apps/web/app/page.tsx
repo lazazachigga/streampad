@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { endpoints } from '../lib/api';
 
-const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? 'https://streampad-backend.onrender.com';
+const BACKEND = 'https://streampad-backend.onrender.com';
 
 interface Token {
   mint: string;
@@ -23,9 +23,9 @@ const MOCK_TOKENS: Token[] = [
 
 function PlatformBadge({ platform }: { platform: string }) {
   if (platform === 'twitch') {
-    return <span className="text-xs px-2.5 py-1 rounded-full bg-twitch/20 text-twitch-light font-mono font-medium">Twitch</span>;
+    return <span className="text-xs px-2.5 py-1 rounded-full bg-twitch/20 text-twitch-light font-mono font-medium border border-twitch/30">Twitch</span>;
   }
-  return <span className="text-xs px-2.5 py-1 rounded-full bg-kick/20 text-kick-light font-mono font-medium">Kick</span>;
+  return <span className="text-xs px-2.5 py-1 rounded-full bg-kick/20 text-kick-light font-mono font-medium border border-kick/30">Kick</span>;
 }
 
 function AuthButtons({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
@@ -34,18 +34,18 @@ function AuthButtons({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
     <div className="flex flex-col sm:flex-row gap-3">
       <a
         href={`${BACKEND}/auth/twitch/login`}
-        className={`flex items-center justify-center gap-2.5 ${padding} rounded-lg bg-twitch text-white font-semibold hover:bg-twitch-dark transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-twitch/20`}
+        className={`group flex items-center justify-center gap-2.5 ${padding} rounded-xl bg-gradient-to-r from-twitch to-twitch-dark text-white font-semibold hover:shadow-lg hover:shadow-twitch/30 transition-all hover:scale-[1.02] active:scale-[0.98]`}
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" viewBox="0 0 24 24" fill="currentColor">
           <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714z" />
         </svg>
         Continue with Twitch
       </a>
       <a
         href={`${BACKEND}/auth/x/login`}
-        className={`flex items-center justify-center gap-2.5 ${padding} rounded-lg bg-white text-black font-semibold hover:bg-zinc-100 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg`}
+        className={`group flex items-center justify-center gap-2.5 ${padding} rounded-xl bg-white text-black font-semibold hover:shadow-lg hover:shadow-white/20 transition-all hover:scale-[1.02] active:scale-[0.98]`}
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+        <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" viewBox="0 0 24 24" fill="currentColor">
           <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
         </svg>
         Continue with X
@@ -58,8 +58,21 @@ export default function HomePage() {
   const [tokens, setTokens] = useState<Token[]>(MOCK_TOKENS);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{ totalFeesDistributed: number; tokensLaunched: number; activeStreamers: number; volume24h: number; claimsCount: number } | null>(null);
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [solChange, setSolChange] = useState<number | null>(null);
 
   useEffect(() => {
+    // Fetch real SOL price from CoinGecko
+    fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_24hr_change=true')
+      .then(r => r.json())
+      .then(data => {
+        if (data.solana) {
+          setSolPrice(data.solana.usd);
+          setSolChange(data.solana.usd_24h_change);
+        }
+      })
+      .catch(() => {});
+
     Promise.all([
       endpoints.tokens().catch(() => ({ tokens: [] })),
       endpoints.stats().catch(() => null),
@@ -74,38 +87,52 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      {/* Ticker */}
-      <div className="border-b border-surface-3 bg-surface-1 overflow-hidden h-9 flex items-center">
-        <div className="animate-marquee whitespace-nowrap text-xs font-mono text-text-secondary">
-          <span className="mx-6">@streamer claimed 12.4 SOL</span>
-          <span className="mx-6 text-volt">●</span>
-          <span className="mx-6">$ALPHA +184% 24h</span>
-          <span className="mx-6 text-volt">●</span>
-          <span className="mx-6">new token: $OWL</span>
-          <span className="mx-6 text-volt">●</span>
-          <span className="mx-6">@streamer claimed 12.4 SOL</span>
-          <span className="mx-6 text-volt">●</span>
-          <span className="mx-6">$ALPHA +184% 24h</span>
-          <span className="mx-6 text-volt">●</span>
-          <span className="mx-6">new token: $OWL</span>
-          <span className="mx-6 text-volt">●</span>
+      {/* Ticker with real SOL price */}
+      <div className="border-b border-surface-3 bg-surface-1/80 backdrop-blur overflow-hidden h-9 flex items-center">
+        <div className="animate-marquee whitespace-nowrap text-xs font-mono">
+          {solPrice && (
+            <>
+              <span className="mx-4 text-volt font-bold">SOL ${solPrice.toFixed(2)}</span>
+              <span className={`mx-2 ${solChange && solChange >= 0 ? 'text-up' : 'text-down'}`}>
+                {solChange ? `${solChange >= 0 ? '+' : ''}${solChange.toFixed(2)}%` : ''}
+              </span>
+              <span className="mx-4 text-text-secondary">●</span>
+            </>
+          )}
+          <span className="mx-4 text-text-secondary">@streamer claimed 12.4 SOL</span>
+          <span className="mx-4 text-volt">●</span>
+          <span className="mx-4 text-text-secondary">$ALPHA +184% 24h</span>
+          <span className="mx-4 text-volt">●</span>
+          <span className="mx-4 text-text-secondary">new token: $OWL</span>
+          <span className="mx-4 text-volt">●</span>
+          <span className="mx-4 text-text-secondary">@streamer claimed 12.4 SOL</span>
+          <span className="mx-4 text-volt">●</span>
+          <span className="mx-4 text-text-secondary">$ALPHA +184% 24h</span>
+          <span className="mx-4 text-volt">●</span>
+          <span className="mx-4 text-text-secondary">new token: $OWL</span>
+          <span className="mx-4 text-volt">●</span>
         </div>
       </div>
 
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-twitch/5 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-twitch/10 via-transparent to-kick/10 pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6 py-20 md:py-32">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-surface-3 bg-surface-1 text-xs font-mono text-text-secondary mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-volt/30 bg-volt/5 text-xs font-mono text-volt mb-6 backdrop-blur">
                 <span className="w-2 h-2 rounded-full bg-kick animate-pulse" />
                 Live on Solana
+                {solPrice && (
+                  <span className="ml-2 text-text-secondary">
+                    · SOL ${solPrice.toFixed(2)}
+                  </span>
+                )}
               </div>
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-black tracking-tight leading-[0.85] mb-6">
                 YOUR STREAM.<br />
                 YOUR TOKEN.<br />
-                <span className="text-volt">YOUR FEES.</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-volt to-kick">YOUR FEES.</span>
               </h1>
               <p className="text-text-secondary text-lg md:text-xl mb-8 max-w-lg leading-relaxed">
                 75% of fees for you, on-chain. Connect Twitch or Kick, wallet created automatically, claim in one click.
@@ -113,28 +140,31 @@ export default function HomePage() {
               <AuthButtons size="lg" />
               <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-6">
                 {[
-                  { value: stats?.totalFeesDistributed ?? '12.4', label: 'SOL distributed' },
-                  { value: stats?.tokensLaunched ?? 42, label: 'Tokens launched' },
-                  { value: stats?.activeStreamers ?? 18, label: 'Active streamers' },
-                  { value: stats?.claimsCount ?? '1.2K', label: 'Claims' },
+                  { value: stats?.totalFeesDistributed ?? '12.4', label: 'SOL distributed', glow: 'volt' },
+                  { value: stats?.tokensLaunched ?? 42, label: 'Tokens launched', glow: 'twitch' },
+                  { value: stats?.activeStreamers ?? 18, label: 'Active streamers', glow: 'kick' },
+                  { value: stats?.claimsCount ?? '1.2K', label: 'Claims', glow: 'up' },
                 ].map((m) => (
-                  <div key={m.label}>
-                    <div className="text-2xl md:text-3xl font-mono font-bold tabular-nums">{m.value}</div>
+                  <div key={m.label} className="group">
+                    <div className="text-2xl md:text-3xl font-mono font-bold tabular-nums group-hover:text-volt transition-colors">{m.value}</div>
                     <div className="text-xs text-text-secondary mt-1">{m.label}</div>
                   </div>
                 ))}
               </div>
             </div>
             <div className="relative">
-              <div className="rounded-2xl border border-surface-3 bg-surface-1 p-6 aspect-[9/16] max-h-[520px] flex flex-col items-center justify-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-twitch to-kick flex items-center justify-center">
-                  <span className="text-2xl">▶</span>
+              <div className="rounded-2xl border border-surface-3 bg-surface-1/50 backdrop-blur p-6 aspect-[9/16] max-h-[520px] flex flex-col items-center justify-center gap-4 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-twitch/5 to-kick/5" />
+                <div className="relative z-10 flex flex-col items-center gap-4">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-twitch via-volt to-kick flex items-center justify-center shadow-lg shadow-volt/20">
+                    <span className="text-3xl">▶</span>
+                  </div>
+                  <p className="text-text-secondary text-sm text-center">Reels coming soon</p>
+                  <p className="text-xs text-text-secondary/60 text-center">Streamer clips will appear here</p>
                 </div>
-                <p className="text-text-secondary text-sm text-center">Reels coming soon</p>
-                <p className="text-xs text-text-secondary/60 text-center">Streamer clips will appear here</p>
               </div>
-              <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-volt/10 rounded-full blur-2xl" />
-              <div className="absolute -top-4 -left-4 w-32 h-32 bg-twitch/10 rounded-full blur-2xl" />
+              <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-volt/20 rounded-full blur-3xl animate-pulse" />
+              <div className="absolute -top-6 -left-6 w-40 h-40 bg-twitch/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
             </div>
           </div>
         </div>
@@ -146,14 +176,14 @@ export default function HomePage() {
         <h2 className="text-3xl md:text-4xl font-display font-bold mb-10">3 steps to your token</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {[
-            { step: '01', title: 'Connect', desc: 'Twitch or Kick, in 1 click. No email, no password.', icon: '🔗' },
-            { step: '02', title: 'Wallet', desc: 'Created automatically, non-custodial. You own the keys.', icon: '👛' },
-            { step: '03', title: 'Claim', desc: 'Your fees, in 1 click. On-chain, verifiable.', icon: '💰' },
+            { step: '01', title: 'Connect', desc: 'Twitch or Kick, in 1 click. No email, no password.', icon: '🔗', color: 'twitch' },
+            { step: '02', title: 'Wallet', desc: 'Created automatically, non-custodial. You own the keys.', icon: '👛', color: 'volt' },
+            { step: '03', title: 'Claim', desc: 'Your fees, in 1 click. On-chain, verifiable.', icon: '💰', color: 'kick' },
           ].map((s) => (
-            <div key={s.step} className="group rounded-xl border border-surface-3 bg-surface-1 p-6 hover:border-volt/50 transition-all">
+            <div key={s.step} className="group rounded-2xl border border-surface-3 bg-surface-1/50 backdrop-blur p-6 hover:border-volt/50 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-volt/5">
               <div className="flex items-center gap-3 mb-4">
                 <div className="text-4xl font-display font-black text-volt">{s.step}</div>
-                <span className="text-2xl">{s.icon}</span>
+                <span className="text-2xl group-hover:scale-110 transition-transform">{s.icon}</span>
               </div>
               <div className="font-semibold text-lg mb-2">{s.title}</div>
               <div className="text-sm text-text-secondary leading-relaxed">{s.desc}</div>
@@ -178,7 +208,7 @@ export default function HomePage() {
             <a
               key={t.mint}
               href={`/token/${t.mint}`}
-              className="group block rounded-xl border border-surface-3 bg-surface-1 p-5 hover:border-volt/50 transition-all hover:-translate-y-0.5"
+              className="group block rounded-2xl border border-surface-3 bg-surface-1/50 backdrop-blur p-5 hover:border-volt/50 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-volt/5"
             >
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -218,7 +248,7 @@ export default function HomePage() {
               { label: 'Claims', value: stats ? String(stats.claimsCount) : '1.2K', demo: !stats },
               { label: 'Definitive split', value: '75 / 25', demo: false },
             ].map((m) => (
-              <div key={m.label} className="rounded-xl border border-surface-3 bg-surface-1 p-5">
+              <div key={m.label} className="rounded-2xl border border-surface-3 bg-surface-1/50 backdrop-blur p-5 hover:border-volt/30 transition-colors">
                 <div className="text-xs text-text-secondary mb-2">{m.label}</div>
                 <div className="text-2xl font-mono font-bold tabular-nums">{m.value}</div>
                 {m.demo && <div className="text-[10px] text-volt mt-2 font-mono uppercase tracking-wider">Demo data</div>}
@@ -230,27 +260,32 @@ export default function HomePage() {
 
       {/* Transparency */}
       <section className="max-w-7xl mx-auto px-6 py-20 border-t border-surface-3">
-        <div className="rounded-2xl border border-surface-3 bg-surface-1 p-8 md:p-12">
-          <div className="text-xs font-mono text-volt mb-4 tracking-widest">TRANSPARENCY</div>
-          <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Verifiable on-chain</h2>
-          <p className="text-text-secondary mb-6 max-w-2xl">
-            Program address, Solscan link, definitive split on-chain. No yield promises — buybacks are described as transparency on fee usage.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <a href="/transparency" className="px-5 py-2.5 rounded-lg border border-surface-3 text-sm font-semibold hover:bg-surface-2 transition">
-              View transparency
-            </a>
-            <a href="https://solscan.io" target="_blank" rel="noopener noreferrer" className="px-5 py-2.5 rounded-lg border border-surface-3 text-sm font-semibold hover:bg-surface-2 transition">
-              Solscan ↗
-            </a>
+        <div className="rounded-2xl border border-surface-3 bg-gradient-to-br from-surface-1/80 to-surface-1/40 backdrop-blur p-8 md:p-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-volt/5 rounded-full blur-3xl" />
+          <div className="relative">
+            <div className="text-xs font-mono text-volt mb-4 tracking-widest">TRANSPARENCY</div>
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">Verifiable on-chain</h2>
+            <p className="text-text-secondary mb-6 max-w-2xl">
+              Program address, Solscan link, definitive split on-chain. No yield promises — buybacks are described as transparency on fee usage.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a href="/transparency" className="px-5 py-2.5 rounded-xl border border-surface-3 text-sm font-semibold hover:bg-surface-2 hover:border-volt/30 transition">
+                View transparency
+              </a>
+              <a href="https://solscan.io" target="_blank" rel="noopener noreferrer" className="px-5 py-2.5 rounded-xl border border-surface-3 text-sm font-semibold hover:bg-surface-2 hover:border-volt/30 transition">
+                Solscan ↗
+              </a>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer CTA */}
       <section className="max-w-7xl mx-auto px-6 py-20 border-t border-surface-3">
-        <div className="rounded-2xl border border-volt/20 bg-gradient-to-br from-surface-1 to-surface-1 p-8 md:p-12 text-center relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-twitch/5 to-kick/5 pointer-events-none" />
+        <div className="rounded-2xl border border-volt/20 bg-gradient-to-br from-surface-1/80 via-surface-1/60 to-surface-1/40 backdrop-blur p-8 md:p-12 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-twitch/5 via-volt/5 to-kick/5 pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-60 h-60 bg-volt/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-twitch/10 rounded-full blur-3xl" />
           <h2 className="text-3xl md:text-5xl font-display font-black mb-4 relative">Launch your token</h2>
           <p className="text-text-secondary mb-8 relative">75% for you. Non-negotiable, unchangeable.</p>
           <div className="relative">

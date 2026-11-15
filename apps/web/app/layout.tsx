@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { SolanaWalletProvider } from '../lib/wallet';
 import { Header, Footer } from '../components/layout';
+import { AnimatedBackground } from '../components/AnimatedBackground';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,9 +15,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr" className="dark">
       <body className="bg-surface-0 text-text-primary min-h-screen antialiased">
         <SolanaWalletProvider>
-          <Header />
-          <main className="min-h-[calc(100vh-4rem)]">{children}</main>
-          <Footer />
+          <AnimatedBackground />
+          <div className="relative z-10">
+            <Header />
+            <main className="min-h-[calc(100vh-4rem)]">{children}</main>
+            <Footer />
+          </div>
         </SolanaWalletProvider>
       </body>
     </html>
