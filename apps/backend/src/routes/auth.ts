@@ -165,9 +165,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       redirect_uri: redirectUri,
       code_verifier: stateData.codeVerifier,
     });
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
     const tokenRes = await fetch(X_TOKEN, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${basicAuth}`,
+      },
       body,
     });
     if (!tokenRes.ok) {
