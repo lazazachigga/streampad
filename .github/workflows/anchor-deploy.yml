@@ -26,20 +26,46 @@ jobs:
           solana airdrop 2 || true
           sleep 5
           solana airdrop 2 || true
+          sleep 5
+          solana balance
 
-      - name: Install Anchor CLI
-        run: |
-          cargo install --git https://github.com/coral-xyz/anchor --tag v0.31.1 anchor-cli --locked
-
-      - name: Build & Deploy
+      - name: Build program
         working-directory: programs
         run: |
-          cargo build --release -p streamer-vault 2>&1 | tail -5
+          cargo build --release -p streamer-vault 2>&1 | tail -10
           echo "Build complete"
+          ls -la target/deploy/ 2>/dev/null || ls -la target/release/*.so 2>/dev/null || find . -name "*.so" 2>/dev/null
+
+      - name: Deploy to Devnet
+        working-directory: programs
+        run: |
+          # Find the .so file
+          SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
+          if [ -z "$SO_FILE" ]; then
+            SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
+          fi
+          echo "Found .so: $SO_FILE"
+          
+          if [ -z "$SO_FILE" ]; then
+            echo "No .so file found!"
+            exit 1
+          fi
+          
+          # Generate a program keypair
+          solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
+          PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
+          echo "PROGRAM_ID=$PROGRAM_ID" >> $GITHUB_ENV
+          
+          # Deploy
+          solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
+          
+          echo "=========================================="
+          echo "PROGRAM ID: $PROGRAM_ID"
+          echo "=========================================="
+          echo "Add this to Render env vars:"
+          echo "STREAMER_VAULT_PROGRAM_ID=$PROGRAM_ID"
 
       - name: Output Program ID
         run: |
-          echo "Add this to Render env vars:"
-          echo "STREAMER_VAULT_PROGRAM_ID=$PROGRAM_ID"
-          echo ""
           echo "Program deployed to devnet!"
+          echo "PROGRAM_ID=$PROGRAM_ID"
