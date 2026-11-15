@@ -1,4 +1,4 @@
-name: Anchor Deploy Devnet
+name: Anchor Build & Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,18 +21,30 @@ jobs:
           sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Configure Solana
+      - name: Configure Solana for Devnet
         run: |
           solana config set --url https://api.devnet.solana.com
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
+          echo "Wallet: $(solana address)"
+
+      - name: Request SOL from faucet
+        run: |
           WALLET=$(solana address)
-          echo "Wallet: $WALLET"
-          # Request SOL
-          solana airdrop 2 2>&1 || echo "Airdrop 1 failed"
-          sleep 5
-          solana airdrop 2 2>&1 || echo "Airdrop 2 failed"
-          sleep 5
-          echo "Balance:"
+          # Try faucet multiple times
+          for i in 1 2 3; do
+            echo "Attempt $i..."
+            RESULT=$(curl -s -X POST "https://api.devnet.solana.com" \
+              -H "Content-Type: application/json" \
+              -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"requestAirdrop\",\"params\":[\"$WALLET\",2000000000]}" 2>&1)
+            echo "Result: $RESULT"
+            if echo "$RESULT" | grep -q "result"; then
+              echo "Airdrop successful!"
+              break
+            fi
+            sleep 20
+          done
+          sleep 10
+          echo "Final balance:"
           solana balance
 
       - name: Build program
@@ -66,7 +78,7 @@ jobs:
           echo "PROGRAM_ID=$PROGRAM_ID"
           
           echo "Deploying..."
-          solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com 2>&1
+          solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
           
           echo "=========================================="
           echo "PROGRAM ID: $PROGRAM_ID"
