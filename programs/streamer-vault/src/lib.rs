@@ -1,8 +1,4 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::ed25519_program;
-use anchor_lang::solana_program::hash::hash;
-use anchor_lang::solana_program::instruction::Instruction;
-use anchor_lang::solana_program::sysvar::instructions::Instructions;
 
 declare_id!("6o7s3X28onCeYAQF2kjqKBLE8eHT5cTCQq1suNc1KFru");
 
