@@ -4,7 +4,7 @@ use anchor_lang::solana_program::hash::hash;
 use anchor_lang::solana_program::instruction::Instruction;
 use anchor_lang::solana_program::sysvar::instructions::Instructions;
 
-declare_id!("11111111111111111111111111111111");
+declare_id!("6o7s3X28onCeYAQF2kjqKBLE8eHT5cTCQq1suNc1KFru");
 
 #[program]
 pub mod streamer_vault {
