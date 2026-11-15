@@ -106,7 +106,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       maxAge: 7 * 24 * 60 * 60, // 7 days
     });
 
-    return { ok: true, provider: 'twitch', userId: user.id, login: user.login };
+    // Redirect to frontend
+    const frontendUrl = process.env.WEB_ORIGIN ?? 'https://streampad.wtf';
+    return reply.redirect(`${frontendUrl}/streamer?provider=twitch&login=${encodeURIComponent(user.login)}`);
   });
 
   // X (Twitter) with proper PKCE
@@ -182,7 +184,9 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       maxAge: 7 * 24 * 60 * 60,
     });
 
-    return { ok: true, provider: 'x', userId: userJson.data.id, login: userJson.data.username };
+    // Redirect to frontend
+    const frontendUrl = process.env.WEB_ORIGIN ?? 'https://streampad.wtf';
+    return reply.redirect(`${frontendUrl}/streamer?provider=x&login=${encodeURIComponent(userJson.data.username)}`);
   });
 
   // Kick
