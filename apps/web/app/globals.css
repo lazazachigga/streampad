@@ -46,5 +46,28 @@ body::before {
 .snap-y { scroll-snap-type: y mandatory; }
 .snap-start { scroll-snap-align: start; }
 
-/* Tabular nums */
-.tabular-nums { font-variant-numeric: tabular-nums; }
+/* Float animation for orbs */
+@keyframes float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(10px, -15px) scale(1.05); }
+  50% { transform: translate(-5px, 10px) scale(0.95); }
+  75% { transform: translate(15px, 5px) scale(1.02); }
+}
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+/* Gradient animation */
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient {
+  animation: gradient 4s ease infinite;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
