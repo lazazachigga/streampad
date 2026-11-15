@@ -27,9 +27,12 @@ jobs:
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
           WALLET=$(solana address)
           echo "Wallet: $WALLET"
-          # Request SOL from faucet
-          solana airdrop 2 2>&1 || echo "Airdrop failed"
-          sleep 10
+          # Request SOL from faucet (retry 5 times)
+          for i in 1 2 3 4 5; do
+            echo "Airdrop attempt $i..."
+            solana airdrop 2 2>&1 && break
+            sleep 15
+          done
           echo "Balance: $(solana balance)"
 
       - name: Build program
@@ -39,23 +42,13 @@ jobs:
           echo "Build complete"
           echo "=== .so files ==="
           find . -name "*.so" 2>/dev/null
-          echo "=== target/release ==="
-          ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
-
-      - name: Check deploy prerequisites
-        working-directory: programs
-        run: |
-          echo "=== Balance ==="
-          solana balance
-          echo "=== .so files ==="
-          find . -name "*.so" 2>/dev/null
-          echo "=== Program keypair ==="
-          solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
-          solana address -k /tmp/program-keypair.json
 
       - name: Deploy to Devnet
         working-directory: programs
         run: |
+          echo "=== Balance before deploy ==="
+          solana balance
+          
           SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
           if [ -z "$SO_FILE" ]; then
             SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
@@ -67,6 +60,9 @@ jobs:
             exit 1
           fi
           
+          ls -la "$SO_FILE"
+          
+          solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
           echo "PROGRAM_ID=$PROGRAM_ID"
           
