@@ -13,7 +13,7 @@ import { walletRoutes } from './routes/wallet.js';
 import { tokenRoutes } from './routes/tokens.js';
 import { meRoutes } from './routes/me.js';
 
-const app = Fastify({ logger: true });
+const app = Fastify({ logger: true, bodyLimit: 1024 * 1024 }); // 1MB max body
 
 // Security headers
 await app.register(helmet, {
@@ -24,13 +24,26 @@ await app.register(helmet, {
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", process.env.WEB_ORIGIN ?? 'http://localhost:3000'],
+      frameAncestors: ["'none'"],
     },
   },
+  hsts: { maxAge: 31536000, includeSubDomains: true },
 });
 
-// CORS strict
+// CORS strict — only allow configured origins
+const allowedOrigins = [
+  process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+  'https://streampad.wtf',
+].filter(Boolean);
+
 await app.register(cors, {
-  origin: [process.env.WEB_ORIGIN ?? 'http://localhost:3000', 'https://streampad-frontend.vercel.app', 'https://streampad.wtf'],
+  origin: (origin, cb) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Not allowed by CORS'), false);
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 });
@@ -99,7 +112,7 @@ await app.register(walletRoutes);
 await app.register(tokenRoutes);
 await app.register(meRoutes);
 
-// Global error handler
+// Global error handler — ne pas fuiter les détails internes
 app.setErrorHandler((error, _req, reply) => {
   app.log.error(error);
   const statusCode = error.statusCode ?? 500;
