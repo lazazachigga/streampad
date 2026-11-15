@@ -27,7 +27,8 @@ jobs:
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
           WALLET=$(solana address)
           echo "Wallet: $WALLET"
-          # Request SOL from faucet (retry 5 times)
+          echo "WALLET=$WALLET" >> $GITHUB_ENV
+          # Request SOL from faucet (multiple attempts)
           for i in 1 2 3 4 5; do
             echo "Airdrop attempt $i..."
             solana airdrop 2 2>&1 && break
@@ -42,32 +43,41 @@ jobs:
           echo "Build complete"
           echo "=== .so files ==="
           find . -name "*.so" 2>/dev/null
+          echo "=== target/release ==="
+          ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
 
-      - name: Deploy to Devnet
+      - name: Check prerequisites
         working-directory: programs
         run: |
-          echo "=== Balance before deploy ==="
+          echo "=== Balance ==="
           solana balance
-          
+          echo "=== .so files ==="
+          find . -name "*.so" 2>/dev/null
           SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
           if [ -z "$SO_FILE" ]; then
             SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
           fi
-          echo "Found .so: $SO_FILE"
-          
+          echo "SO_FILE=$SO_FILE"
           if [ -z "$SO_FILE" ]; then
             echo "ERROR: No .so file found!"
             exit 1
           fi
-          
           ls -la "$SO_FILE"
+
+      - name: Deploy to Devnet
+        working-directory: programs
+        run: |
+          SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
+          if [ -z "$SO_FILE" ]; then
+            SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
+          fi
           
           solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
           echo "PROGRAM_ID=$PROGRAM_ID"
           
-          echo "Deploying..."
-          solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
+          echo "Deploying $SO_FILE..."
+          solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com 2>&1
           
           echo "=========================================="
           echo "PROGRAM ID: $PROGRAM_ID"
