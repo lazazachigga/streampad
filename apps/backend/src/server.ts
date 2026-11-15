@@ -30,7 +30,7 @@ await app.register(helmet, {
 
 // CORS strict
 await app.register(cors, {
-  origin: process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+  origin: [process.env.WEB_ORIGIN ?? 'http://localhost:3000', 'https://streampad-frontend.vercel.app', 'https://streampad.wtf'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 });
