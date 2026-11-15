@@ -1,24 +1,53 @@
 'use client';
 
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
-import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
-import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { clusterApiUrl } from '@solana/web3.js';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
-import '@solana/wallet-adapter-react-ui/styles.css';
+export interface WalletState {
+  connected: boolean;
+  publicKey: string | null;
+  connect: () => Promise<void>;
+  disconnect: () => void;
+}
+
+export function useWallet(): WalletState {
+  const [connected, setConnected] = useState(false);
+  const [publicKey, setPublicKey] = useState<string | null>(null);
+
+  useEffect(() => {
+    const solana = (window as any).solana;
+    if (solana?.isPhantom) {
+      solana.connect({ onlyIfTrusted: true }).then((res: any) => {
+        setConnected(true);
+        setPublicKey(res.publicKey.toString());
+      }).catch(() => {});
+    }
+  }, []);
+
+  const connect = async () => {
+    const solana = (window as any).solana;
+    if (solana) {
+      try {
+        const res = await solana.connect();
+        setConnected(true);
+        setPublicKey(res.publicKey.toString());
+      } catch (e) {
+        console.error('Wallet connect failed:', e);
+      }
+    } else {
+      window.open('https://phantom.app/', '_blank');
+    }
+  };
+
+  const disconnect = () => {
+    const solana = (window as any).solana;
+    if (solana) solana.disconnect();
+    setConnected(false);
+    setPublicKey(null);
+  };
+
+  return { connected, publicKey, connect, disconnect };
+}
 
 export function SolanaWalletProvider({ children }: { children: React.ReactNode }) {
-  const network = WalletAdapterNetwork.Devnet;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-  const wallets = useMemo(() => [new PhantomWalletAdapter(), new SolflareWalletAdapter()], []);
-
-  return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
-  );
+  return <>{children}</>;
 }

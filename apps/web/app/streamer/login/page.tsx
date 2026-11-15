@@ -1,3 +1,7 @@
+'use client';
+
+const BACKEND = process.env.NEXT_PUBLIC_API_URL ?? 'https://streampad-backend.onrender.com';
+
 export default function LoginPage() {
   return (
     <div className="max-w-md mx-auto px-6 py-16">
@@ -5,13 +9,13 @@ export default function LoginPage() {
       <p className="text-zinc-400 text-center mb-8">Sign in with your platform.</p>
       <div className="space-y-3">
         <a
-          href="/auth/twitch/login"
+          href={`${BACKEND}/auth/twitch/login`}
           className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-twitch text-white font-medium hover:bg-twitch-dark transition"
         >
           Continue with Twitch
         </a>
         <a
-          href="/auth/x/login"
+          href={`${BACKEND}/auth/x/login`}
           className="flex items-center justify-center gap-2 w-full py-3 rounded-lg bg-white text-black font-medium hover:bg-zinc-200 transition"
         >
           Continue with X
