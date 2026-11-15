@@ -27,10 +27,10 @@ jobs:
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
           WALLET=$(solana address)
           echo "Wallet: $WALLET"
+          # Request SOL from faucet
           solana airdrop 2 2>&1 || echo "Airdrop failed"
           sleep 10
-          echo "Balance:"
-          solana balance
+          echo "Balance: $(solana balance)"
 
       - name: Build program
         working-directory: programs
@@ -41,6 +41,17 @@ jobs:
           find . -name "*.so" 2>/dev/null
           echo "=== target/release ==="
           ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
+
+      - name: Check deploy prerequisites
+        working-directory: programs
+        run: |
+          echo "=== Balance ==="
+          solana balance
+          echo "=== .so files ==="
+          find . -name "*.so" 2>/dev/null
+          echo "=== Program keypair ==="
+          solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
+          solana address -k /tmp/program-keypair.json
 
       - name: Deploy to Devnet
         working-directory: programs
@@ -53,13 +64,9 @@ jobs:
           
           if [ -z "$SO_FILE" ]; then
             echo "ERROR: No .so file found!"
-            find . -name "*.so" 2>/dev/null
             exit 1
           fi
           
-          ls -la "$SO_FILE"
-          
-          solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
           echo "PROGRAM_ID=$PROGRAM_ID"
           
