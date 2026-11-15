@@ -3,7 +3,7 @@ name: Anchor Deploy Devnet
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # Manual trigger also available
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -25,9 +25,12 @@ jobs:
         run: |
           solana config set --url https://api.devnet.solana.com
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-          solana airdrop 2 || true
-          sleep 5
-          solana airdrop 2 || true
+          # Try airdrop multiple times
+          for i in 1 2 3 4 5; do
+            solana airdrop 2 && break
+            echo "Airdrop attempt $i failed, retrying..."
+            sleep 10
+          done
           sleep 5
           solana balance
 
@@ -36,12 +39,11 @@ jobs:
         run: |
           cargo build --release -p streamer-vault 2>&1 | tail -10
           echo "Build complete"
-          ls -la target/deploy/ 2>/dev/null || ls -la target/release/*.so 2>/dev/null || find . -name "*.so" 2>/dev/null
+          find . -name "*.so" 2>/dev/null
 
       - name: Deploy to Devnet
         working-directory: programs
         run: |
-          # Find the .so file
           SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
           if [ -z "$SO_FILE" ]; then
             SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
@@ -53,21 +55,19 @@ jobs:
             exit 1
           fi
           
-          # Generate a program keypair
           solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
           echo "PROGRAM_ID=$PROGRAM_ID" >> $GITHUB_ENV
           
-          # Deploy
           solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
           
           echo "=========================================="
           echo "PROGRAM ID: $PROGRAM_ID"
           echo "=========================================="
-          echo "Add this to Render env vars:"
-          echo "STREAMER_VAULT_PROGRAM_ID=$PROGRAM_ID"
 
       - name: Output Program ID
         run: |
+          echo "Add this to Render env vars:"
+          echo "STREAMER_VAULT_PROGRAM_ID=$PROGRAM_ID"
+          echo ""
           echo "Program deployed to devnet!"
-          echo "PROGRAM_ID=$PROGRAM_ID"
