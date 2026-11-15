@@ -47,6 +47,15 @@ export function Header() {
                 Twitch
               </a>
               <a
+                href={`${BACKEND}/auth/kick/login`}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-kick/10 text-kick-light text-xs font-medium hover:bg-kick/20 transition"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                </svg>
+                Kick
+              </a>
+              <a
                 href={`${BACKEND}/auth/x/login`}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition"
               >
@@ -89,6 +98,7 @@ export function Footer() {
           <div className="font-semibold text-text-primary mb-3">Account</div>
           <ul className="space-y-2">
             <li><a href={`${BACKEND}/auth/twitch/login`} className="hover:text-text-primary transition">Sign in with Twitch</a></li>
+            <li><a href={`${BACKEND}/auth/kick/login`} className="hover:text-text-primary transition">Sign in with Kick</a></li>
             <li><a href={`${BACKEND}/auth/x/login`} className="hover:text-text-primary transition">Sign in with X</a></li>
             <li><Link href="/dashboard" className="hover:text-text-primary transition">Dashboard</Link></li>
           </ul>
