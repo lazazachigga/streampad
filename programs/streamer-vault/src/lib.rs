@@ -38,13 +38,13 @@ pub mod streamer_vault {
         require!(message[..32] == vault.streamer_id_hash, VaultError::BadMessage);
 
         let dest_bytes = vault.destination.to_bytes();
-        require!(message[32..64] == dest_bytes, VaultError::BadMessage);
+        require!(message[32..64] == dest_bytes.as_slice(), VaultError::BadMessage);
 
         let amount_bytes = amount.to_le_bytes();
-        require!(message[64..72] == amount_bytes, VaultError::BadMessage);
+        require!(message[64..72] == amount_bytes.as_slice(), VaultError::BadMessage);
 
         let nonce_bytes = nonce.to_le_bytes();
-        require!(message[72..80] == nonce_bytes, VaultError::BadMessage);
+        require!(message[72..80] == nonce_bytes.as_slice(), VaultError::BadMessage);
 
         require!(signature != [0u8; 64], VaultError::BadSignature);
 
