@@ -16,8 +16,11 @@ jobs:
         with:
           toolchain: 1.82.0
 
+      - name: Check Rust
+        run: rustc --version && cargo --version
+
       - name: Build program
         working-directory: programs
         run: |
-          cargo build --release -p streamer-vault
-          echo "BUILD_EXIT_CODE=$?"
+          cargo build -p streamer-vault 2>&1
+          echo "EXIT_CODE: $?"
