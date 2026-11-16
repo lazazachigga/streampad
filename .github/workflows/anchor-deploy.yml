@@ -31,13 +31,13 @@ jobs:
         working-directory: programs
         run: |
           cargo build --release -p streamer-vault 2>&1 | tail -20
-          echo "=== Build complete ==="
+          echo "Build complete"
           echo "=== .so files ==="
           find . -name "*.so" 2>/dev/null
           echo "=== target/release ==="
           ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
 
-      - name: Deploy to Devnet
+      - name: Check .so file
         working-directory: programs
         run: |
           SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
@@ -45,29 +45,32 @@ jobs:
             SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
           fi
           echo "Found .so: $SO_FILE"
-          
           if [ -z "$SO_FILE" ]; then
             echo "ERROR: No .so file found!"
             find . -name "*.so" 2>/dev/null
             exit 1
           fi
-          
           ls -la "$SO_FILE"
+          echo "SO_FILE=$SO_FILE" >> $GITHUB_ENV
+
+      - name: Deploy to Devnet
+        working-directory: programs
+        run: |
+          echo "Balance before deploy:"
+          solana balance
           
-          # Request SOL (retry 3 times)
-          WALLET=$(solana address)
-          for i in 1 2 3; do
-            echo "Airdrop attempt $i..."
-            solana airdrop 2 2>&1 && break
-            sleep 20
-          done
-          echo "Balance: $(solana balance)"
+          SO_FILE="${{ env.SO_FILE }}"
+          echo "Deploying $SO_FILE..."
           
           solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
           echo "PROGRAM_ID=$PROGRAM_ID"
           
-          echo "Deploying..."
+          # Try airdrop
+          solana airdrop 2 2>&1 || echo "Airdrop failed"
+          sleep 5
+          echo "Balance after airdrop: $(solana balance)"
+          
           solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
           
           echo "=========================================="
