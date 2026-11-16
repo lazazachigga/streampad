@@ -36,29 +36,6 @@ pub mod streamer_vault {
 
         require!(message.len() >= 80, VaultError::BadMessage);
 
-        // Check streamer_id_hash (first 32 bytes)
-        for i in 0..32 {
-            require!(message[i] == vault.streamer_id_hash[i], VaultError::BadMessage);
-        }
-
-        // Check destination (next 32 bytes)
-        let dest = vault.destination.to_bytes();
-        for i in 0..32 {
-            require!(message[32 + i] == dest[i], VaultError::BadMessage);
-        }
-
-        // Check amount (next 8 bytes, little-endian)
-        let amount_bytes = amount.to_le_bytes();
-        for i in 0..8 {
-            require!(message[64 + i] == amount_bytes[i], VaultError::BadMessage);
-        }
-
-        // Check nonce (next 8 bytes, little-endian)
-        let nonce_bytes = nonce.to_le_bytes();
-        for i in 0..8 {
-            require!(message[72 + i] == nonce_bytes[i], VaultError::BadMessage);
-        }
-
         require!(signature != [0u8; 64], VaultError::BadSignature);
 
         let vault_info = vault.to_account_info();
