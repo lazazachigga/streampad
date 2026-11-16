@@ -16,33 +16,6 @@ jobs:
         with:
           toolchain: 1.82.0
 
-      - name: Install Solana CLI
-        run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
-      - name: Configure Solana
-        run: |
-          solana config set --url https://api.devnet.solana.com
-          solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-          echo "Wallet: $(solana address)"
-
       - name: Build program
         working-directory: programs
         run: cargo build --release -p streamer-vault
-
-      - name: Deploy to Devnet
-        working-directory: programs
-        run: |
-          solana airdrop 2 2>&1 || echo "Airdrop failed"
-          sleep 5
-          solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
-          PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
-          echo "PROGRAM_ID=$PROGRAM_ID"
-          SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
-          if [ -z "$SO_FILE" ]; then
-            SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
-          fi
-          echo "SO_FILE=$SO_FILE"
-          solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
-          echo "PROGRAM ID: $PROGRAM_ID"
