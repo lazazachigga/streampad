@@ -2,6 +2,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import crypto from 'node:crypto';
+import { PublicKey } from '@solana/web3.js';
 
 const AttestationBody = z.object({
   mint: z.string().min(1),
@@ -76,7 +77,7 @@ export async function meRoutes(app: FastifyInstance): Promise<void> {
     // Build the message (80 bytes)
     // streamer_id_hash (32) + destination (32) + amount (8) + nonce (8)
     const streamerIdHash = crypto.createHash('sha256').update(session.userId).digest();
-    const destBytes = Buffer.from(destination, 'base58'); // assumes base58
+    const destBytes = new PublicKey(destination).toBytes();
     const amountBytes = Buffer.alloc(8);
     amountBytes.writeBigUInt64LE(amountLamports);
     const nonceBytes = Buffer.alloc(8);
