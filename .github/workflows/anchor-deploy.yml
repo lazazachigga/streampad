@@ -17,9 +17,9 @@ jobs:
           toolchain: 1.82.0
 
       - name: Build program
-        working-directory: programs
+        working-directory: programs/streamer-vault
         run: |
-          cargo build --release -p streamer-vault 2>&1 | tail -20
+          cargo build --release 2>&1 | tail -20
           echo "=== Build complete ==="
           find . -name "*.so" 2>/dev/null
           ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
@@ -35,30 +35,40 @@ jobs:
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
           echo "Wallet: $(solana address)"
 
-      - name: Deploy to Devnet
-        working-directory: programs
+      - name: Check .so file
+        working-directory: programs/streamer-vault
         run: |
           SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
           if [ -z "$SO_FILE" ]; then
             SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
           fi
           echo "Found .so: $SO_FILE"
-          
           if [ -z "$SO_FILE" ]; then
             echo "ERROR: No .so file found!"
             find . -name "*.so" 2>/dev/null
             exit 1
           fi
-          
           ls -la "$SO_FILE"
+
+      - name: Request SOL
+        run: |
+          solana airdrop 2 2>&1 || echo "Airdrop 1 failed"
+          sleep 5
+          solana airdrop 2 2>&1 || echo "Airdrop 2 failed"
+          sleep 5
+          echo "Balance: $(solana balance)"
+
+      - name: Deploy to Devnet
+        working-directory: programs/streamer-vault
+        run: |
+          SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
+          if [ -z "$SO_FILE" ]; then
+            SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
+          fi
           
           solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
           echo "PROGRAM_ID=$PROGRAM_ID"
-          
-          solana airdrop 2 2>&1 || echo "Airdrop failed"
-          sleep 5
-          echo "Balance: $(solana balance)"
           
           solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
           
