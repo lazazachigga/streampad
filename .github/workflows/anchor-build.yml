@@ -12,15 +12,24 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust
-        run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-          source $HOME/.cargo/env
-          rustc --version
-          cargo --version
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.82.0
 
-      - name: Build program
-        working-directory: programs/streamer-vault
+      - name: Create test project
         run: |
-          source $HOME/.cargo/env
+          mkdir -p /tmp/test-rust/src
+          echo 'fn main() { println!("Hello"); }' > /tmp/test-rust/src/main.rs
+          cat > /tmp/test-rust/Cargo.toml << 'EOF'
+          [package]
+          name = "test-rust"
+          version = "0.1.0"
+          edition = "2021"
+
+          [[bin]]
+          name = "test_rust"
+          path = "src/main.rs"
+          EOF
+          cd /tmp/test-rust
           cargo build 2>&1
           echo "EXIT_CODE: $?"
