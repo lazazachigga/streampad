@@ -7,5 +7,3 @@ edition = "2021"
 [[bin]]
 name = "streamer_vault"
 path = "src/main.rs"
-
-[dependencies]
