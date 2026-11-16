@@ -16,17 +16,6 @@ jobs:
         with:
           toolchain: 1.82.0
 
-      - name: Install Solana CLI
-        run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
-      - name: Configure Solana
-        run: |
-          solana config set --url https://api.devnet.solana.com
-          solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-          echo "Wallet: $(solana address)"
-
       - name: Build program
         working-directory: programs
         run: |
@@ -37,49 +26,8 @@ jobs:
           echo "=== target/release ==="
           ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
 
-      - name: Check .so file
-        working-directory: programs
-        run: |
-          SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
-          if [ -z "$SO_FILE" ]; then
-            SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
-          fi
-          echo "Found .so: $SO_FILE"
-          if [ -z "$SO_FILE" ]; then
-            echo "ERROR: No .so file found!"
-            find . -name "*.so" 2>/dev/null
-            exit 1
-          fi
-          ls -la "$SO_FILE"
-          echo "SO_FILE=$SO_FILE" >> $GITHUB_ENV
-
-      - name: Deploy to Devnet
-        working-directory: programs
-        run: |
-          echo "=== Balance before deploy ==="
-          solana balance
-          
-          SO_FILE="${{ env.SO_FILE }}"
-          echo "Deploying $SO_FILE..."
-          
-          # Request SOL
-          solana airdrop 2 2>&1 || echo "Airdrop failed"
-          sleep 5
-          echo "Balance after airdrop: $(solana balance)"
-          
-          solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
-          PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
-          echo "PROGRAM_ID=$PROGRAM_ID"
-          
-          solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
-          
-          echo "=========================================="
-          echo "PROGRAM ID: $PROGRAM_ID"
-          echo "=========================================="
-
-      - name: Output Program ID
-        run: |
-          echo "Add this to Render env vars:"
-          echo "STREAMER_VAULT_PROGRAM_ID=$PROGRAM_ID"
-          echo ""
-          echo "Program deployed to devnet!"
+      - name: Upload .so artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamer-vault-so
+          path: programs/target/release/*.so
