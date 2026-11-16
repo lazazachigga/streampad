@@ -18,30 +18,4 @@ jobs:
 
       - name: Build program
         working-directory: programs/streamer-vault
-        run: |
-          cargo build --release 2>&1 | tail -20
-          echo "=== Build complete ==="
-          echo "=== All files in target/ ==="
-          find target/ -type f 2>/dev/null
-          echo "=== Done ==="
-
-      - name: Install Solana CLI
-        run: |
-          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
-      - name: Configure Solana
-        run: |
-          solana config set --url https://api.devnet.solana.com
-          solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
-          echo "Wallet: $(solana address)"
-
-      - name: Deploy to Devnet
-        working-directory: programs/streamer-vault
-        run: |
-          echo "=== .so files ==="
-          find . -name "*.so" 2>/dev/null
-          echo "=== target/release ==="
-          ls -la target/release/ 2>/dev/null || echo "No target/release"
-          echo "=== Done ==="
-          echo "Skipping deploy for now"
+        run: cargo build --release -p streamer-vault
