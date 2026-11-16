@@ -18,6 +18,4 @@ jobs:
 
       - name: Build program
         working-directory: programs/streamer-vault
-        run: |
-          cargo build --release 2>&1
-          echo "EXIT_CODE: $?"
+        run: cargo build --verbose 2>&1
