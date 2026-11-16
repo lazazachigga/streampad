@@ -21,13 +21,15 @@ jobs:
         run: |
           cargo build --release -p streamer-vault 2>&1 | tail -20
           echo "=== Build complete ==="
-          echo "=== .so files ==="
-          find . -name "*.so" 2>/dev/null
-          echo "=== target/release ==="
-          ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
+          echo "=== All files in target/ ==="
+          find target/ -type f -name "*.so" 2>/dev/null
+          find target/ -type f -name "libstreamer*" 2>/dev/null
+          echo "=== target/release contents ==="
+          ls -la target/release/ 2>/dev/null || echo "No target/release"
+          echo "=== Done ==="
 
-      - name: Upload .so artifact
+      - name: Upload build output
         uses: actions/upload-artifact@v4
         with:
-          name: streamer-vault-so
-          path: programs/target/release/*.so
+          name: streamer-vault-build
+          path: programs/target/release/
