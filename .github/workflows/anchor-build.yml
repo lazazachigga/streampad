@@ -18,8 +18,4 @@ jobs:
 
       - name: Build program
         working-directory: programs
-        run: |
-          cargo build --release -p streamer-vault 2>&1 | tail -20
-          echo "=== Build complete ==="
-          find . -name "*.so" 2>/dev/null
-          ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
+        run: cargo build --release -p streamer-vault
