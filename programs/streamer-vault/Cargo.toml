@@ -4,6 +4,17 @@ version = "0.1.0"
 description = "StreamerVault claim program"
 edition = "2021"
 
-[[bin]]
+[lib]
+crate-type = ["cdylib", "lib"]
 name = "streamer_vault"
-path = "src/main.rs"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build"]
+
+[dependencies]
+anchor-lang = "0.31.1"
