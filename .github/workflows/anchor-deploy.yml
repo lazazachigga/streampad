@@ -32,10 +32,29 @@ jobs:
         run: |
           cargo build --release 2>&1 | tail -20
           echo "=== Build complete ==="
-          echo "=== .so files ==="
           find . -name "*.so" 2>/dev/null
-          echo "=== target/release ==="
           ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
+
+      - name: Check .so file
+        working-directory: programs/streamer-vault
+        run: |
+          SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
+          if [ -z "$SO_FILE" ]; then
+            SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
+          fi
+          echo "Found .so: $SO_FILE"
+          if [ -z "$SO_FILE" ]; then
+            echo "ERROR: No .so file found!"
+            find . -name "*.so" 2>/dev/null
+            exit 1
+          fi
+          ls -la "$SO_FILE"
+
+      - name: Request SOL
+        run: |
+          solana airdrop 2 2>&1 || echo "Airdrop failed"
+          sleep 5
+          echo "Balance: $(solana balance)"
 
       - name: Deploy to Devnet
         working-directory: programs/streamer-vault
@@ -44,22 +63,6 @@ jobs:
           if [ -z "$SO_FILE" ]; then
             SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
           fi
-          echo "Found .so: $SO_FILE"
-          
-          if [ -z "$SO_FILE" ]; then
-            echo "ERROR: No .so file found!"
-            find . -name "*.so" 2>/dev/null
-            exit 1
-          fi
-          
-          ls -la "$SO_FILE"
-          
-          # Request SOL (try multiple times)
-          for i in 1 2 3; do
-            solana airdrop 2 2>&1 && break
-            sleep 10
-          done
-          echo "Balance: $(solana balance)"
           
           solana-keygen new --no-bip39-passphrase -o /tmp/program-keypair.json
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
