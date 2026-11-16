@@ -1,17 +1,14 @@
 use anchor_lang::prelude::*;
 
 #[program]
-pub mod streamer_vault {
+pub mod hello {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    pub fn say_hello(_ctx: Context<Hello>) -> Result<()> {
+        msg!("Hello, world!");
         Ok(())
     }
 }
 
 #[derive(Accounts)]
-pub struct Initialize<'info> {
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    pub system_program: Program<'info, System>,
-}
+pub struct Hello {}
