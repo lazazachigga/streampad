@@ -16,6 +16,8 @@ jobs:
         with:
           toolchain: 1.82.0
 
-      - name: Check program
+      - name: Build program
         working-directory: programs/streamer-vault
-        run: cargo check 2>&1
+        run: |
+          cargo build 2>&1
+          echo "EXIT_CODE: $?"
