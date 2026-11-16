@@ -18,9 +18,4 @@ jobs:
 
       - name: Build program
         working-directory: programs/streamer-vault
-        run: |
-          cat Cargo.toml
-          echo "---"
-          cat src/lib.rs
-          echo "---"
-          cargo build 2>&1
+        run: cargo build 2>&1
