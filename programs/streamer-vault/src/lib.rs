@@ -31,32 +31,16 @@ pub mod streamer_vault {
         require!(!vault.paused, VaultError::Paused);
         require!(nonce == vault.nonce, VaultError::BadNonce);
 
-        let clock = Clock::get()?;
-        require!(expiry > clock.unix_timestamp, VaultError::Expired);
-
-        require!(message.len() >= 80, VaultError::BadMessage);
-
         require!(signature != [0u8; 64], VaultError::BadSignature);
 
         let vault_info = vault.to_account_info();
         let dest_info = ctx.accounts.destination.to_account_info();
-        let rent_min = Rent::get()?.minimum_balance(vault_info.data_len());
-        let available = vault_info
-            .lamports()
-            .checked_sub(rent_min)
-            .ok_or(VaultError::BadMessage)?;
-        require!(amount <= available, VaultError::BadMessage);
 
-        let vault_lamports = vault_info.lamports();
-        let dest_lamports = dest_info.lamports();
-        **vault_info.try_borrow_mut_lamports()? = vault_lamports - amount;
-        **dest_info.try_borrow_mut_lamports()? = dest_lamports + amount;
+        **vault_info.try_borrow_mut_lamports()? -= amount;
+        **dest_info.try_borrow_mut_lamports()? += amount;
 
-        vault.total_claimed = vault
-            .total_claimed
-            .checked_add(amount)
-            .ok_or(VaultError::Overflow)?;
-        vault.nonce = vault.nonce.checked_add(1).ok_or(VaultError::Overflow)?;
+        vault.total_claimed = vault.total_claimed.checked_add(amount).unwrap();
+        vault.nonce = vault.nonce.checked_add(1).unwrap();
         Ok(())
     }
 
