@@ -37,25 +37,30 @@ jobs:
           echo "=== target/release ==="
           ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
 
+      - name: Check .so file
+        working-directory: programs
+        run: |
+          SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
+          if [ -z "$SO_FILE" ]; then
+            SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
+          fi
+          echo "Found .so: $SO_FILE"
+          if [ -z "$SO_FILE" ]; then
+            echo "ERROR: No .so file found!"
+            find . -name "*.so" 2>/dev/null
+            exit 1
+          fi
+          ls -la "$SO_FILE"
+          echo "SO_FILE=$SO_FILE" >> $GITHUB_ENV
+
       - name: Deploy to Devnet
         working-directory: programs
         run: |
           echo "=== Balance before deploy ==="
           solana balance
           
-          SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
-          if [ -z "$SO_FILE" ]; then
-            SO_FILE=$(find . -name "*.so" 2>/dev/null | head -1)
-          fi
-          echo "Found .so: $SO_FILE"
-          
-          if [ -z "$SO_FILE" ]; then
-            echo "ERROR: No .so file found!"
-            find . -name "*.so" 2>/dev/null
-            exit 1
-          fi
-          
-          ls -la "$SO_FILE"
+          SO_FILE="${{ env.SO_FILE }}"
+          echo "Deploying $SO_FILE..."
           
           # Request SOL
           solana airdrop 2 2>&1 || echo "Airdrop failed"
@@ -66,7 +71,6 @@ jobs:
           PROGRAM_ID=$(solana address -k /tmp/program-keypair.json)
           echo "PROGRAM_ID=$PROGRAM_ID"
           
-          echo "Deploying..."
           solana program deploy "$SO_FILE" --program-id /tmp/program-keypair.json --url https://api.devnet.solana.com
           
           echo "=========================================="
