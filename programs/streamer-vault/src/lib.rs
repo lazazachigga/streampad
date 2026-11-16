@@ -47,8 +47,10 @@ pub mod streamer_vault {
             .ok_or(VaultError::BadMessage)?;
         require!(amount <= available, VaultError::BadMessage);
 
-        **vault_info.try_borrow_mut_lamports()? -= amount;
-        **dest_info.try_borrow_mut_lamports()? += amount;
+        let vault_lamports = vault_info.lamports();
+        let dest_lamports = dest_info.lamports();
+        **vault_info.try_borrow_mut_lamports()? = vault_lamports - amount;
+        **dest_info.try_borrow_mut_lamports()? = dest_lamports + amount;
 
         vault.total_claimed = vault
             .total_claimed
