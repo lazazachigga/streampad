@@ -22,12 +22,5 @@ jobs:
           cargo build --release -p streamer-vault 2>&1 | tail -20
           echo "=== Build complete ==="
           echo "=== All files in target/ ==="
-          find target/ -type f 2>/dev/null | head -50
+          find target/ -type f 2>/dev/null
           echo "=== Done ==="
-
-      - name: Upload build output
-        uses: actions/upload-artifact@v4
-        with:
-          name: streamer-vault-build
-          path: programs/target/
-          if-no-files-found: warn
