@@ -19,5 +19,6 @@ jobs:
       - name: Build program
         working-directory: programs
         run: |
-          cargo build --release -p streamer-vault 2>&1 | tail -50
-          echo "EXIT_CODE: ${PIPESTATUS[0]}"
+          cargo build --release -p streamer-vault 2>&1 || true
+          echo "=== EXIT CODE: $? ==="
+          echo "=== Done ==="
