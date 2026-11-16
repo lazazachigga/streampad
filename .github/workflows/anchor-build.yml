@@ -22,5 +22,5 @@ jobs:
       - name: Build program
         working-directory: programs
         run: |
-          cargo build -p streamer-vault 2>&1
-          echo "EXIT_CODE: $?"
+          cargo build 2>&1
+          echo "EXIT_CODE=$?"
