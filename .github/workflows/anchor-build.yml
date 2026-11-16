@@ -16,6 +16,16 @@ jobs:
         with:
           toolchain: 1.75.0
 
+      - name: Check files
+        working-directory: programs/streamer-vault
+        run: |
+          echo "=== Cargo.toml ==="
+          cat Cargo.toml
+          echo "=== src/main.rs ==="
+          cat src/main.rs
+          echo "=== ls ==="
+          ls -la src/
+
       - name: Build program
         working-directory: programs/streamer-vault
         run: cargo build 2>&1
