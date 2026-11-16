@@ -16,6 +16,14 @@ jobs:
         with:
           toolchain: 1.82.0
 
+      - name: Build program
+        working-directory: programs
+        run: |
+          cargo build --release -p streamer-vault 2>&1 | tail -20
+          echo "=== Build complete ==="
+          find . -name "*.so" 2>/dev/null
+          ls -la target/release/*.so 2>/dev/null || echo "No .so in target/release"
+
       - name: Install Solana CLI
         run: |
           sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
@@ -27,26 +35,8 @@ jobs:
           solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
           echo "Wallet: $(solana address)"
 
-      - name: Build program
-        working-directory: programs/streamer-vault
-        run: |
-          cargo build --release 2>&1 | tail -20
-          echo "=== Build complete ==="
-          echo "=== All files in target/ ==="
-          find target/ -type f 2>/dev/null
-          echo "=== Done ==="
-
-      - name: Check .so file
-        working-directory: programs/streamer-vault
-        run: |
-          echo "=== .so files ==="
-          find . -name "*.so" 2>/dev/null
-          echo "=== target/release ==="
-          ls -la target/release/ 2>/dev/null || echo "No target/release"
-          echo "=== Done ==="
-
       - name: Deploy to Devnet
-        working-directory: programs/streamer-vault
+        working-directory: programs
         run: |
           SO_FILE=$(find . -name "libstreamer_vault.so" 2>/dev/null | head -1)
           if [ -z "$SO_FILE" ]; then
