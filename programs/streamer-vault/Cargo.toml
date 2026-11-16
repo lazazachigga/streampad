@@ -4,9 +4,8 @@ version = "0.1.0"
 description = "StreamerVault claim program"
 edition = "2021"
 
-[lib]
-crate-type = ["cdylib", "lib"]
+[[bin]]
 name = "streamer_vault"
+path = "src/main.rs"
 
 [dependencies]
-anchor-lang = "0.29.0"
