@@ -8,4 +8,4 @@ crate-type = ["cdylib", "lib"]
 name = "streamer_vault"
 
 [dependencies]
-anchor-lang = "0.31.3"
+anchor-lang = "1.2.2"
