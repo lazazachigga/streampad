@@ -25,6 +25,7 @@ export function Header() {
         <nav className="hidden md:flex items-center gap-8 text-sm text-text-secondary">
           <Link href="/" className="hover:text-text-primary transition">Tokens</Link>
           <Link href="/launch" className="hover:text-text-primary transition">Launch</Link>
+          <Link href="/token/sp" className="hover:text-text-primary transition">StreamPad Token</Link>
           <Link href="/transparency" className="hover:text-text-primary transition">Transparency</Link>
         </nav>
         <div className="flex items-center gap-3">
@@ -91,6 +92,7 @@ export function Footer() {
           <ul className="space-y-2">
             <li><Link href="/" className="hover:text-text-primary transition">Tokens</Link></li>
             <li><Link href="/launch" className="hover:text-text-primary transition">Launch</Link></li>
+            <li><Link href="/token/sp" className="hover:text-text-primary transition">$SP Token</Link></li>
             <li><Link href="/transparency" className="hover:text-text-primary transition">Transparency</Link></li>
           </ul>
         </div>

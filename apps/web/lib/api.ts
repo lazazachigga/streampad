@@ -24,5 +24,8 @@ export const endpoints = {
   meFees: () => api('/me/fees'),
   claimAttestation: (body: unknown) => api('/me/claim/attestation', { method: 'POST', body: JSON.stringify(body) }),
   transparency: () => api('/transparency'),
+  notifications: (userId: string) => api(`/notifications?userId=${userId}`),
+  markNotificationsRead: (body: { notificationId?: string; userId?: string }) => api('/notifications/read', { method: 'POST', body: JSON.stringify(body) }),
+  launchForStreamer: (body: unknown) => api('/tokens/launch-for-streamer', { method: 'POST', body: JSON.stringify(body) }),
   provisionWallet: (identity: string) => api('/wallet/provision', { method: 'POST', body: JSON.stringify({ identity }) }),
 };
