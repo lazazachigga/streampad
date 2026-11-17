@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-streamer_vault = "6o7s3X28onCeYAQF2kjqKBLE8eHT5cTCQq1suNc1KFru"
+streamer_vault = "2JuuYqXM6PdBBRPmyw5vU5z1sZtDKWztDg319V71LYTL"
 
 [registry]
 url = "https://api.apr.dev"
