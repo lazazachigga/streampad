@@ -111,7 +111,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-surface-3 py-4 text-center text-xs text-text-secondary">
-        © StreamPad — external audit required before mainnet.
+        © StreamPad — external audit required before mainnet. DYOR. NFA. Not financial advice.
       </div>
     </footer>
   );

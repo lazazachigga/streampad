@@ -520,6 +520,76 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Onboard streamers */}
+      <section className="max-w-7xl mx-auto px-6 py-24 border-t border-surface-3/50">
+        <div className="rounded-3xl border border-kick/20 bg-gradient-to-br from-surface-1/80 via-kick/5 to-surface-1/40 backdrop-blur-2xl p-10 md:p-16 overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-kick/10 rounded-full blur-3xl" />
+          <div className="relative grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="text-xs font-mono text-kick mb-4 tracking-widest">ONBOARD STREAMERS</div>
+              <h2 className="text-4xl md:text-5xl font-display font-black mb-6">
+                Launch a token for <span className="text-transparent bg-clip-text bg-gradient-to-r from-kick to-volt">your favorite streamer</span>
+              </h2>
+              <p className="text-text-secondary text-lg mb-8 leading-relaxed">
+                Know a Twitch or Kick streamer who should have a token? Launch one for them.
+                They'll be notified and can claim their 75% fees at any time. You help them onboard.
+              </p>
+              <a href="/launch" className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-kick to-kick-dark text-black font-bold hover:shadow-lg hover:shadow-kick/30 transition-all hover:scale-105">
+                Launch for a streamer
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </a>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { icon: '🎮', label: 'Twitch streamers', desc: 'Launch for any Twitch creator' },
+                { icon: '🟢', label: 'Kick streamers', desc: 'Launch for any Kick creator' },
+                { icon: '💰', label: '75% to streamer', desc: 'They claim when ready' },
+                { icon: '🔔', label: 'Auto-notify', desc: 'Streamer gets notified' },
+              ].map((item) => (
+                <div key={item.label} className="rounded-2xl border border-surface-3/50 bg-surface-0/50 backdrop-blur p-5 text-center hover:border-kick/30 transition-colors group">
+                  <div className="text-2xl mb-2 group-hover:scale-125 transition-transform">{item.icon}</div>
+                  <div className="text-sm font-semibold mb-1">{item.label}</div>
+                  <div className="text-xs text-text-secondary">{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Buybacks & Transparency */}
+      <section className="max-w-7xl mx-auto px-6 py-24 border-t border-surface-3/50">
+        <div className="text-center mb-16">
+          <div className="text-xs font-mono text-volt mb-4 tracking-widest">BUYBACKS & TRANSPARENCY</div>
+          <h2 className="text-4xl md:text-6xl font-display font-black">
+            Every fee, <span className="text-transparent bg-clip-text bg-gradient-to-r from-volt to-kick">verifiable</span>
+          </h2>
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[
+            { icon: '💰', title: '25% Protocol Fees', desc: 'Every token launched generates 25% protocol fees, tracked on-chain.' },
+            { icon: '🔄', title: 'Buybacks', desc: 'Protocol fees fund buybacks of the $SP token. Each buyback is logged with signature, amount, and avg price.' },
+            { icon: '📊', title: 'Public Dashboard', desc: 'All fees, buybacks, and distributions are visible on the transparency page.' },
+          ].map((item) => (
+            <div key={item.title} className="rounded-3xl border border-surface-3/50 bg-surface-1/50 backdrop-blur-xl p-6 hover:border-volt/30 transition-colors group">
+              <div className="text-3xl mb-4 group-hover:scale-125 transition-transform">{item.icon}</div>
+              <h3 className="text-lg font-bold mb-2">{item.title}</h3>
+              <p className="text-sm text-text-secondary leading-relaxed">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8 text-center">
+          <a href="/transparency" className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl border border-surface-3 text-sm font-bold hover:border-volt/50 hover:bg-volt/5 transition-all">
+            View full transparency
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+            </svg>
+          </a>
+        </div>
+      </section>
+
       {/* Footer CTA - massive */}
       <section className="max-w-7xl mx-auto px-6 py-24 border-t border-surface-3/50">
         <div className="relative rounded-3xl border border-volt/30 bg-gradient-to-br from-surface-1/80 via-volt/5 to-surface-1/40 backdrop-blur-2xl p-12 md:p-20 text-center overflow-hidden">
