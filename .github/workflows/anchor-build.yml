@@ -16,6 +16,11 @@ jobs:
         with:
           toolchain: 1.85.0
 
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/stable/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
       - name: Build program
         working-directory: programs/streamer-vault
-        run: cargo build 2>&1
+        run: cargo build-sbf 2>&1
