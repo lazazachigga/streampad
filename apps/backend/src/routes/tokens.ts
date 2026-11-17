@@ -56,7 +56,84 @@ function addNotification(userId: string, type: 'token_launched' | 'fees_claimed'
   });
 }
 
-// Parse Twitch/Kick URL to extract platform and username
+// Validate that a Twitch username exists
+async function validateTwitchUsername(username: string): Promise<boolean> {
+  const clientId = process.env.TWITCH_CLIENT_ID;
+  const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return true; // skip validation if not configured
+
+  try {
+    // Get app access token
+    const tokenRes = await fetch('https://id.twitch.tv/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: 'client_credentials',
+      }),
+    });
+    if (!tokenRes.ok) return true; // skip if token fetch fails
+    const tokenData = (await tokenRes.json()) as { access_token: string };
+    
+    // Check if user exists
+    const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, {
+      headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
+    });
+    if (!userRes.ok) return true;
+    const userData = (await userRes.json()) as { data: Array<{ id: string }> };
+    return Array.isArray(userData.data) && userData.data.length > 0;
+  } catch {
+    return true; // skip on error
+  }
+}
+
+// Validate that a Kick username exists (best-effort)
+async function validateKickUsername(username: string): Promise<boolean> {
+  // Kick API is less documented; do basic format validation
+  return username.length > 0 && username.length <= 25 && /^[a-zA-Z0-9_]+$/.test(username);
+}
+async function fetchTwitchUserData(username: string): Promise<{ displayName: string; profileImageUrl: string; followers: number } | null> {
+  const clientId = process.env.TWITCH_CLIENT_ID;
+  const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  try {
+    const tokenRes = await fetch('https://id.twitch.tv/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        grant_type: 'client_credentials',
+      }),
+    });
+    if (!tokenRes.ok) return null;
+    const tokenData = (await tokenRes.json()) as { access_token: string };
+
+    const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, {
+      headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
+    });
+    if (!userRes.ok) return null;
+    const userData = (await userRes.json()) as { data: Array<{ id: string; display_name: string; profile_image_url: string }> };
+    if (!userData.data?.[0]) return null;
+    const user = userData.data[0];
+
+    const followRes = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${user.id}`, {
+      headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
+    });
+    let followers = 0;
+    if (followRes.ok) {
+      const followData = (await followRes.json()) as { total: number };
+      followers = followData.total ?? 0;
+    }
+
+    return { displayName: user.display_name, profileImageUrl: user.profile_image_url, followers };
+  } catch {
+    return null;
+  }
+}
+
 function parseStreamerUrl(url: string): { platform: 'twitch' | 'kick'; username: string } | null {
   const twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
   if (twitchMatch && twitchMatch[1]) return { platform: 'twitch', username: twitchMatch[1] };
@@ -114,6 +191,14 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: 'invalid streamer URL', hint: 'Use a Twitch or Kick URL (e.g., https://twitch.tv/username)' });
     }
 
+    // Validate that the streamer account exists
+    const isValid = parsed.platform === 'twitch'
+      ? await validateTwitchUsername(parsed.username)
+      : await validateKickUsername(parsed.username);
+    if (!isValid) {
+      return reply.code(400).send({ error: 'streamer not found', hint: `No ${parsed.platform} account found for "${parsed.username}"` });
+    }
+
     const launcherSecret = process.env.LAUNCHER_WALLET_SECRET;
     if (!launcherSecret) {
       return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
@@ -133,6 +218,9 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     };
     launchedTokens.push(token);
 
+    // Fetch streamer data for response
+    const streamerData = parsed.platform === 'twitch' ? await fetchTwitchUserData(parsed.username) : null;
+
     // Notify the streamer that someone launched a token for them
     addNotification(
       `streamer-${parsed.username}`,
@@ -141,7 +229,7 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       { mint, symbol: b.data.symbol, name: b.data.name, platform: parsed.platform }
     );
 
-    return { ok: true, token, streamer: parsed };
+    return { ok: true, token, streamer: { ...parsed, ...streamerData } };
   });
 
   app.get('/tokens', async () => ({ tokens: launchedTokens }));

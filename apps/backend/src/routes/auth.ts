@@ -53,7 +53,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/auth/twitch/callback', async (req, reply) => {
     const q = CallbackQuery.safeParse(req.query);
-    if (!q.success || !q.data.code) return reply.code(400).send({ error: 'bad query' });
+    if (!q.success || !q.data.code) {
+      const frontendUrl = process.env.WEB_ORIGIN ?? 'https://streampad.wtf';
+      return reply.redirect(`${frontendUrl}?error=auth_cancelled`);
+    }
 
     // Validate state (CSRF protection)
     if (!q.data.state || !oauthStates.has(q.data.state)) {
@@ -136,7 +139,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/auth/kick/callback', async (req, reply) => {
     const q = CallbackQuery.safeParse(req.query);
-    if (!q.success || !q.data.code) return reply.code(400).send({ error: 'bad query' });
+    if (!q.success || !q.data.code) {
+      const frontendUrl = process.env.WEB_ORIGIN ?? 'https://streampad.wtf';
+      return reply.redirect(`${frontendUrl}?error=auth_cancelled`);
+    }
 
     if (!q.data.state || !oauthStates.has(q.data.state)) {
       return reply.code(400).send({ error: 'invalid or expired state' });
@@ -180,11 +186,13 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       console.error('Kick user fetch failed:', errText);
       return reply.code(400).send({ error: 'user fetch failed' });
     }
-    const userJson = (await userRes.json()) as { data: Array<{ user_id: number; username: string }> };
-    const user = userJson.data?.[0];
-    if (!user) return reply.code(400).send({ error: 'user not found' });
+    const userJson = (await userRes.json()) as { data: Array<{ user_id: number; username?: string; name?: string; slug?: string }> | { user_id: number; username?: string; name?: string; slug?: string } };
+    const userData = Array.isArray(userJson.data) ? userJson.data[0] : userJson.data;
+    if (!userData) return reply.code(400).send({ error: 'user not found' });
+    const username = userData.username ?? userData.name ?? userData.slug ?? String(userData.user_id);
+    const userId = String(userData.user_id);
 
-    reply.setCookie('session', JSON.stringify({ provider: 'kick', userId: String(user.user_id), login: user.username }), {
+    reply.setCookie('session', JSON.stringify({ provider: 'kick', userId, login: username }), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -193,6 +201,6 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     });
 
     const frontendUrl = process.env.WEB_ORIGIN ?? 'https://streampad.wtf';
-    return reply.redirect(`${frontendUrl}/streamer?provider=kick&login=${encodeURIComponent(user.username)}`);
+    return reply.redirect(`${frontendUrl}/streamer?provider=kick&login=${encodeURIComponent(username)}`);
   });
 }

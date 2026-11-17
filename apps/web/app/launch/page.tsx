@@ -51,7 +51,10 @@ export default function LaunchPage() {
         body: JSON.stringify({ streamerUrl, name: sName, symbol: sSymbol, description: sDescription, imageUri: sImageUri }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Launch failed');
+      if (!res.ok) {
+        const errMsg = typeof data.error === 'string' ? data.error : (data.error?.message || JSON.stringify(data.error) || 'Launch failed');
+        throw new Error(errMsg);
+      }
       setResult(data);
     } catch (err: any) {
       setError(err.message);
@@ -164,6 +167,16 @@ export default function LaunchPage() {
           <p className="text-text-secondary mt-1">Mint: {result.token?.mint}</p>
           <p className="text-text-secondary">Symbol: {result.token?.symbol}</p>
           {result.streamer && <p className="text-text-secondary">Streamer: @{result.streamer.username} on {result.streamer.platform}</p>}
+          {result.token?.mint && (
+            <a
+              href={`https://pump.fun/coin/${result.token.mint}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-xl bg-volt text-black text-sm font-bold hover:bg-volt-dark transition"
+            >
+              View on pump.fun ↗
+            </a>
+          )}
         </div>
       )}
     </div>
