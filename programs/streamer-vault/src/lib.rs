@@ -1,3 +1,3 @@
-use anchor_lang::prelude::*;
-
-pub fn hello() {}
+pub fn hello() {
+    println!("Hello, world!");
+}
