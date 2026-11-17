@@ -1,5 +1,5 @@
 // apps/backend/src/routes/me.ts
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import crypto from 'node:crypto';
 import { PublicKey } from '@solana/web3.js';
@@ -11,7 +11,7 @@ const AttestationBody = z.object({
 });
 
 // Helper to extract session from cookie
-function getSession(req: any): { provider: string; userId: string; login: string } | null {
+function getSession(req: FastifyRequest): { provider: string; userId: string; login: string } | null {
   try {
     const session = req.cookies?.session;
     if (!session) return null;
@@ -24,13 +24,21 @@ function getSession(req: any): { provider: string; userId: string; login: string
 // Attestor keypair (in production, load from secure storage / env)
 function getAttestorKey(): crypto.KeyObject {
   const secret = process.env.ATTESTOR_SECRET;
+  let seed: Buffer;
   if (secret) {
-    const keyBytes = Buffer.from(secret, 'base64');
-    return crypto.createPrivateKey({ key: keyBytes, format: 'raw', type: 'pkcs8' } as any);
+    seed = Buffer.from(secret, 'base64');
+  } else {
+    // Dev fallback: deterministic seed (NOT for production)
+    seed = Buffer.alloc(32, 0x42);
   }
-  // Dev fallback: generate a deterministic key (NOT for production)
-  const seed = Buffer.alloc(32, 0x42);
-  return crypto.createPrivateKey({ key: seed, format: 'raw', type: 'pkcs8' } as any);
+  // Wrap raw 32-byte ed25519 seed in PKCS#8 DER
+  // PKCS#8 PrivateKeyInfo for Ed25519 (RFC 8410):
+  // SEQUENCE { INTEGER 0, SEQUENCE { OID 1.3.101.112 }, OCTET STRING { OCTET STRING { seed } } }
+  const pkcs8Header = Buffer.from([
+    0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x04, 0x22, 0x04, 0x20,
+  ]);
+  const pkcs8Der = Buffer.concat([pkcs8Header, seed]);
+  return crypto.createPrivateKey({ key: pkcs8Der, format: 'der', type: 'pkcs8' });
 }
 
 export function getAttestorPublicKey(): Buffer {

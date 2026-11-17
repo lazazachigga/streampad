@@ -44,7 +44,7 @@ const notifications: Array<{
   metadata: Record<string, unknown>;
 }> = [];
 
-function addNotification(userId: string, type: notifications[0]['type'], message: string, metadata: Record<string, unknown> = {}) {
+function addNotification(userId: string, type: 'token_launched' | 'fees_claimed' | 'token_launched_for_you', message: string, metadata: Record<string, unknown> = {}) {
   notifications.push({
     id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     userId,
@@ -59,10 +59,10 @@ function addNotification(userId: string, type: notifications[0]['type'], message
 // Parse Twitch/Kick URL to extract platform and username
 function parseStreamerUrl(url: string): { platform: 'twitch' | 'kick' | 'x'; username: string } | null {
   const twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
-  if (twitchMatch) return { platform: 'twitch', username: twitchMatch[1] };
+  if (twitchMatch && twitchMatch[1]) return { platform: 'twitch', username: twitchMatch[1] };
 
   const kickMatch = url.match(/kick\.com\/([a-zA-Z0-9_]+)/);
-  if (kickMatch) return { platform: 'kick', username: kickMatch[1] };
+  if (kickMatch && kickMatch[1]) return { platform: 'kick', username: kickMatch[1] };
 
   // Direct handle
   if (url.startsWith('@')) {
@@ -155,7 +155,7 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
 
   // Notifications
   app.get('/notifications', async (req, reply) => {
-    const userId = (req.query as any)?.userId ?? '';
+    const userId = (req.query as { userId?: string })?.userId ?? '';
     if (!userId) return reply.code(400).send({ error: 'userId required' });
     const userNotifs = notifications.filter(n => n.userId === userId);
     return { notifications: userNotifs, unread: userNotifs.filter(n => !n.read).length };
