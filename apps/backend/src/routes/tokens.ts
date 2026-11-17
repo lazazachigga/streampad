@@ -6,7 +6,7 @@ const LaunchBody = z.object({
   name: z.string().min(1).max(32),
   symbol: z.string().min(1).max(10),
   description: z.string().max(500).optional(),
-  imageUri: z.string().url().optional(),
+  imageUri: z.string().optional(),
   creator: z.string().min(1), // base58 pubkey du streamer
   platform: z.enum(['twitch', 'kick']).default('twitch'),
   streamerHandle: z.string().optional(), // @handle du streamer
@@ -17,7 +17,7 @@ const LaunchForStreamerBody = z.object({
   name: z.string().min(1).max(32),
   symbol: z.string().min(1).max(10),
   description: z.string().max(500).optional(),
-  imageUri: z.string().url().optional(),
+  imageUri: z.string().optional(),
 });
 
 // Store launched tokens in memory (use DB in production)
@@ -232,7 +232,50 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     return { ok: true, token, streamer: { ...parsed, ...streamerData } };
   });
 
-  app.get('/tokens', async () => ({ tokens: launchedTokens }));
+  // Streamer info endpoint (followers, live status, profile)
+  app.get('/streamers/:platform/:username', async (req, reply) => {
+    const { platform, username } = req.params as { platform: string; username: string };
+    
+    if (platform === 'twitch') {
+      const data = await fetchTwitchUserData(username);
+      if (!data) return reply.code(404).send({ error: 'streamer not found' });
+      
+      // Check live status
+      let isLive = false;
+      let streamTitle = '';
+      let viewerCount = 0;
+      const clientId = process.env.TWITCH_CLIENT_ID;
+      const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+      if (clientId && clientSecret) {
+        try {
+          const tokenRes = await fetch('https://id.twitch.tv/oauth2/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: 'client_credentials' }),
+          });
+          if (tokenRes.ok) {
+            const tokenData = (await tokenRes.json()) as { access_token: string };
+            const streamRes = await fetch(`https://api.twitch.tv/helix/streams?user_login=${encodeURIComponent(username)}`, {
+              headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
+            });
+            if (streamRes.ok) {
+              const streamData = (await streamRes.json()) as { data: Array<{ title: string; viewer_count: number; type: string }> };
+              if (streamData.data?.[0]) {
+                isLive = streamData.data[0].type === 'live';
+                streamTitle = streamData.data[0].title;
+                viewerCount = streamData.data[0].viewer_count;
+              }
+            }
+          }
+        } catch {}
+      }
+      
+      return { platform: 'twitch', username, displayName: data.displayName, profileImageUrl: data.profileImageUrl, followers: data.followers, isLive, streamTitle, viewerCount };
+    }
+    
+    // Kick - basic info
+    return { platform: 'kick', username, displayName: username, profileImageUrl: '', followers: 0, isLive: false, streamTitle: '', viewerCount: 0 };
+  });
 
   app.get('/tokens/:mint', async (req, reply) => {
     const { mint } = req.params as { mint: string };
