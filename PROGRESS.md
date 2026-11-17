@@ -1,6 +1,6 @@
 # PROGRESS.md — StreamPad
 
-_Dernière mise à jour : 2026-11-15_
+_Dernière mise à jour : 2026-11-17_
 
 ## Phase en cours
 **Phase 4 — Frontend + déploiement** — terminée
@@ -21,6 +21,10 @@ _Dernière mise à jour : 2026-11-15_
   - Auth buttons (Continue with Twitch/X) visibles sur la page d'accueil
   - Backend URL hardcodé (évite le fallback localhost)
   - Pas d'erreurs console
+  - Buybacks transparency section + onboard streamers section ajoutées
+  - DYOR/NFA disclaimer dans le footer
+  - Endpoint `/tokens/launch-for-streamer` + notifications fonctionnels
+  - Backend TS errors corrigés (build Render OK)
 
 ## Reste (selon PROMPT.md)
 1. Phase 0 : résoudre T11 (build Anchor sur CI/Linux), T3 (PDA), T8-T10 réels (secrets), T12-T14
