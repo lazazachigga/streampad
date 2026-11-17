@@ -58,16 +58,6 @@ function AuthButtons({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
         </svg>
         <span className="relative z-10">Kick</span>
       </a>
-      <a
-        href={`${BACKEND}/auth/x/login`}
-        className={`group relative flex items-center justify-center gap-3 ${padding} rounded-2xl bg-white text-black font-bold overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl hover:shadow-white/30 active:scale-[0.98]`}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/0 via-black/10 to-black/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-        <svg className="w-6 h-6 relative z-10 group-hover:rotate-12 transition-transform duration-300" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-        <span className="relative z-10">X</span>
-      </a>
     </div>
   );
 }
@@ -280,7 +270,7 @@ export default function HomePage() {
                       tokens.slice(0, 3).map((t, i) => (
                         <div key={t.mint} className="flex items-center justify-between p-3 rounded-xl bg-surface-0/50 border border-surface-3/50 hover:border-volt/30 transition-all hover:translate-x-1 group">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${t.platform === 'twitch' ? 'bg-twitch/20 text-twitch-light' : t.platform === 'kick' ? 'bg-kick/20 text-kick-light' : 'bg-white/20 text-white'}`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold ${t.platform === 'twitch' ? 'bg-twitch/20 text-twitch-light' : 'bg-kick/20 text-kick-light'}`}>
                               ${t.symbol.charAt(0)}
                             </div>
                             <div>

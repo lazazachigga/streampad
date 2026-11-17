@@ -56,15 +56,6 @@ export function Header() {
                 </svg>
                 Kick
               </a>
-              <a
-                href={`${BACKEND}/auth/x/login`}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/20 transition"
-              >
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                </svg>
-                X
-              </a>
               <button
                 onClick={() => connect()}
                 className="px-4 py-1.5 rounded-lg bg-volt text-black text-xs font-bold uppercase tracking-wider hover:bg-volt-dark transition"
@@ -101,7 +92,6 @@ export function Footer() {
           <ul className="space-y-2">
             <li><a href={`${BACKEND}/auth/twitch/login`} className="hover:text-text-primary transition">Sign in with Twitch</a></li>
             <li><a href={`${BACKEND}/auth/kick/login`} className="hover:text-text-primary transition">Sign in with Kick</a></li>
-            <li><a href={`${BACKEND}/auth/x/login`} className="hover:text-text-primary transition">Sign in with X</a></li>
             <li><Link href="/dashboard" className="hover:text-text-primary transition">Dashboard</Link></li>
           </ul>
         </div>

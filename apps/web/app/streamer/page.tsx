@@ -34,14 +34,14 @@ export default function StreamerPage() {
           <div className="mb-6 p-4 rounded-xl bg-kick/10 border border-kick/30">
             <p className="text-kick font-semibold">✅ Connected!</p>
             <p className="text-text-secondary text-sm mt-1">
-              {provider === 'twitch' ? '🟣' : provider === 'kick' ? '🟢' : '⚪'} @{login} on {provider}
+              {provider === 'twitch' ? '🟣' : '🟢'} @{login} on {provider}
             </p>
           </div>
         ) : session ? (
           <div className="mb-6 p-4 rounded-xl bg-kick/10 border border-kick/30">
             <p className="text-kick font-semibold">✅ Connected!</p>
             <p className="text-text-secondary text-sm mt-1">
-              {session.provider === 'twitch' ? '🟣' : session.provider === 'kick' ? '🟢' : '⚪'} @{session.login} on {session.provider}
+              {session.provider === 'twitch' ? '🟣' : '🟢'} @{session.login} on {session.provider}
             </p>
           </div>
         ) : (
@@ -68,15 +68,6 @@ export default function StreamerPage() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
             </svg>
             Continue with Kick
-          </a>
-          <a
-            href={`${BACKEND}/auth/x/login`}
-            className="flex items-center justify-center gap-3 w-full py-4 rounded-xl bg-white text-black font-semibold hover:bg-zinc-100 transition-all hover:scale-[1.01] active:scale-[0.99] shadow-lg"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
-            Continue with X
           </a>
         </div>
       )}

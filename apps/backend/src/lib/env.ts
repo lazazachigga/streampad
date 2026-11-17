@@ -14,8 +14,6 @@ const EnvSchema = z.object({
   OAUTH_REDIRECT_BASE_URL: z.string().url().optional(),
   TWITCH_CLIENT_ID: z.string().optional(),
   TWITCH_CLIENT_SECRET: z.string().optional(),
-  X_CLIENT_ID: z.string().optional(),
-  X_CLIENT_SECRET: z.string().optional(),
   KICK_CLIENT_ID: z.string().optional(),
   KICK_CLIENT_SECRET: z.string().optional(),
   PRIVY_APP_ID: z.string().optional(),

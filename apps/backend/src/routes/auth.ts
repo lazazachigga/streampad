@@ -9,10 +9,6 @@ const TWITCH_AUTH = 'https://id.twitch.tv/oauth2/authorize';
 const TWITCH_TOKEN = 'https://id.twitch.tv/oauth2/token';
 const TWITCH_USERS = 'https://api.twitch.tv/helix/users';
 
-const X_AUTH = 'https://twitter.com/i/oauth2/authorize';
-const X_TOKEN = 'https://api.twitter.com/2/oauth2/token';
-const X_USERS = 'https://api.twitter.com/2/users/me';
-
 // In-memory state store (use Redis in production)
 const oauthStates = new Map<string, { provider: string; codeVerifier: string; createdAt: number }>();
 
@@ -113,91 +109,6 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     // Redirect to frontend
     const frontendUrl = process.env.WEB_ORIGIN ?? 'https://streampad.wtf';
     return reply.redirect(`${frontendUrl}/streamer?provider=twitch&login=${encodeURIComponent(user.login)}`);
-  });
-
-  // X (Twitter) with proper PKCE
-  app.get('/auth/x/login', async (_req, reply) => {
-    const clientId = process.env.X_CLIENT_ID;
-    const redirectUri = `${process.env.OAUTH_REDIRECT_BASE_URL ?? 'http://localhost:4000'}/auth/x/callback`;
-    if (!clientId) return reply.code(500).send({ error: 'X_CLIENT_ID not configured' });
-
-    const codeVerifier = generateCodeVerifier();
-    const codeChallenge = generateCodeChallenge(codeVerifier);
-    const state = generateState();
-
-    oauthStates.set(state, { provider: 'x', codeVerifier, createdAt: Date.now() });
-
-    const url = new URL(X_AUTH);
-    url.searchParams.set('client_id', clientId);
-    url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('response_type', 'code');
-    url.searchParams.set('scope', 'users.read tweet.read offline.access');
-    url.searchParams.set('state', state);
-    url.searchParams.set('code_challenge', codeChallenge);
-    url.searchParams.set('code_challenge_method', 'S256');
-    reply.redirect(url.toString());
-  });
-
-  app.get('/auth/x/callback', async (req, reply) => {
-    const q = CallbackQuery.safeParse(req.query);
-    if (!q.success || !q.data.code) return reply.code(400).send({ error: 'bad query' });
-
-    // Validate state (CSRF protection)
-    if (!q.data.state || !oauthStates.has(q.data.state)) {
-      return reply.code(400).send({ error: 'invalid or expired state' });
-    }
-    const stateData = oauthStates.get(q.data.state)!;
-    oauthStates.delete(q.data.state);
-
-    if (stateData.provider !== 'x') {
-      return reply.code(400).send({ error: 'state provider mismatch' });
-    }
-
-    const clientId = process.env.X_CLIENT_ID;
-    const clientSecret = process.env.X_CLIENT_SECRET;
-    const redirectUri = `${process.env.OAUTH_REDIRECT_BASE_URL ?? 'http://localhost:4000'}/auth/x/callback`;
-    if (!clientId || !clientSecret) return reply.code(500).send({ error: 'X not configured' });
-
-    const body = new URLSearchParams({
-      client_id: clientId,
-      code: q.data.code,
-      grant_type: 'authorization_code',
-      redirect_uri: redirectUri,
-      code_verifier: stateData.codeVerifier,
-    });
-    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-    const tokenRes = await fetch(X_TOKEN, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${basicAuth}`,
-      },
-      body,
-    });
-    if (!tokenRes.ok) {
-      const errText = await tokenRes.text();
-      console.error('X token exchange failed:', errText);
-      return reply.code(400).send({ error: 'token exchange failed', details: errText });
-    }
-    const tokenJson = (await tokenRes.json()) as { access_token: string };
-    const userRes = await fetch(`${X_USERS}?user.fields=id,username`, {
-      headers: { Authorization: `Bearer ${tokenJson.access_token}` },
-    });
-    if (!userRes.ok) return reply.code(400).send({ error: 'user fetch failed' });
-    const userJson = (await userRes.json()) as { data: { id: string; username: string } };
-
-    // Set session cookie
-    reply.setCookie('session', JSON.stringify({ provider: 'x', userId: userJson.data.id, login: userJson.data.username }), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60,
-    });
-
-    // Redirect to frontend
-    const frontendUrl = process.env.WEB_ORIGIN ?? 'https://streampad.wtf';
-    return reply.redirect(`${frontendUrl}/streamer?provider=x&login=${encodeURIComponent(userJson.data.username)}`);
   });
 
   // Kick

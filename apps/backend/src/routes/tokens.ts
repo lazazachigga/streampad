@@ -8,7 +8,7 @@ const LaunchBody = z.object({
   description: z.string().max(500).optional(),
   imageUri: z.string().url().optional(),
   creator: z.string().min(1), // base58 pubkey du streamer
-  platform: z.enum(['twitch', 'kick', 'x']).default('twitch'),
+  platform: z.enum(['twitch', 'kick']).default('twitch'),
   streamerHandle: z.string().optional(), // @handle du streamer
 });
 
@@ -57,7 +57,7 @@ function addNotification(userId: string, type: 'token_launched' | 'fees_claimed'
 }
 
 // Parse Twitch/Kick URL to extract platform and username
-function parseStreamerUrl(url: string): { platform: 'twitch' | 'kick' | 'x'; username: string } | null {
+function parseStreamerUrl(url: string): { platform: 'twitch' | 'kick'; username: string } | null {
   const twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
   if (twitchMatch && twitchMatch[1]) return { platform: 'twitch', username: twitchMatch[1] };
 
