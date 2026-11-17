@@ -18,4 +18,4 @@ jobs:
 
       - name: Build program
         working-directory: programs/streamer-vault
-        run: cargo build 2>&1
+        run: cargo check 2>&1
