@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::sysvar::instructions as instructions_sysvar;
+use solana_program::sysvar::instructions as instructions_sysvar;
 use anchor_lang::solana_program::clock::Clock;
 
 declare_id!("2JuuYqXM6PdBBRPmyw5vU5z1sZtDKWztDg319V71LYTL");
@@ -190,7 +190,7 @@ fn verify_ed25519_signature(
     expected_message: &[u8; 80],
     expected_signature: &[u8; 64],
 ) -> Result<()> {
-    let ix_sysvar = instructions.to_account_info();
+    let ix_sysvar = instructions.as_ref();
     let current_ix_index = instructions_sysvar::load_current_index_checked(&ix_sysvar)
         .map_err(|_| VaultError::Ed25519NotFound)?;
 

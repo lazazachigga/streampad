@@ -10,6 +10,7 @@ name = "streamer_vault"
 
 [dependencies]
 anchor-lang = "2.0.0-rc.4"
+solana-program = "2"
 
 [profile.release]
 overflow-checks = true
