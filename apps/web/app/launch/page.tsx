@@ -284,7 +284,7 @@ export default function LaunchPage() {
           )}
           {result.token?.mint && (
             <a
-              href={`https://pump.fun/coin/${result.token.mint}`}
+              href={result.pumpFunUrl || `https://pump.fun/coin/${result.token.mint}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-xl bg-volt text-black text-sm font-bold hover:bg-volt-dark transition"

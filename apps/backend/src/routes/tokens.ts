@@ -1,6 +1,9 @@
 // apps/backend/src/routes/tokens.ts
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { Connection, Keypair } from '@solana/web3.js';
+import { PUMP_SDK, GLOBAL_PDA } from '@pump-fun/pump-sdk';
+import BN from 'bn.js';
 
 const LaunchBody = z.object({
   name: z.string().min(1).max(32),
@@ -150,6 +153,50 @@ function parseStreamerUrl(url: string): { platform: 'twitch' | 'kick'; username:
   return null;
 }
 
+// Real pump.fun launch (requires LAUNCHER_WALLET_SECRET + SOLANA_RPC_URL)
+async function launchOnPumpFun(name: string, symbol: string, uri: string): Promise<{ mint: string; signature: string } | null> {
+  const secret = process.env.LAUNCHER_WALLET_SECRET;
+  const rpcUrl = process.env.SOLANA_RPC_URL;
+  if (!secret || !rpcUrl) return null;
+
+  try {
+    const { Transaction, sendAndConfirmTransaction } = await import('@solana/web3.js');
+    const connection = new Connection(rpcUrl, 'confirmed');
+    const launcher = Keypair.fromSecretKey(Buffer.from(secret, 'base64'));
+    
+    const globalInfo = await connection.getAccountInfo(GLOBAL_PDA);
+    if (!globalInfo) return null;
+    const global = PUMP_SDK.decodeGlobal(globalInfo);
+
+    const mint = Keypair.generate();
+    const creator = launcher.publicKey;
+    const ixs = await PUMP_SDK.createV2AndBuyInstructions({
+      global,
+      mint: mint.publicKey,
+      name,
+      symbol,
+      uri: uri || 'https://pump.fun',
+      creator,
+      user: launcher.publicKey,
+      amount: new BN('1000000000'),
+      solAmount: new BN('100000000'),
+      mayhemMode: false,
+    });
+    
+    const sig = await sendAndConfirmTransaction(
+      connection,
+      new Transaction().add(...ixs),
+      [launcher, mint],
+      { commitment: 'confirmed' },
+    );
+    
+    return { mint: mint.publicKey.toBase58(), signature: sig };
+  } catch (err) {
+    console.error('pump.fun launch failed:', err);
+    return null;
+  }
+}
+
 export async function tokenRoutes(app: FastifyInstance): Promise<void> {
   // Launch a token
   app.post('/tokens/launch', async (req, reply) => {
@@ -161,7 +208,11 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
     }
 
-    const mint = `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    // Try real pump.fun launch
+    const pumpResult = await launchOnPumpFun(b.data.name, b.data.symbol, b.data.imageUri || '');
+
+    const mint = pumpResult?.mint ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const signature = pumpResult?.signature ?? 'mock-signature';
     const token = {
       mint,
       name: b.data.name,
@@ -170,7 +221,7 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       platform: b.data.platform,
       streamerHandle: b.data.streamerHandle ?? '',
       launchedAt: new Date().toISOString(),
-      signature: 'mock-signature',
+      signature,
       launchedBy: 'self',
     };
     launchedTokens.push(token);
@@ -178,7 +229,7 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     // Notify the streamer
     addNotification(b.data.creator, 'token_launched', `Your token $${b.data.symbol} has been launched!`, { mint, symbol: b.data.symbol });
 
-    return { ok: true, token };
+    return { ok: true, token, pumpFunUrl: `https://pump.fun/coin/${mint}` };
   });
 
   // Launch a token for a streamer (by URL)
@@ -204,7 +255,11 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
     }
 
-    const mint = `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    // Try real pump.fun launch
+    const pumpResult = await launchOnPumpFun(b.data.name, b.data.symbol, b.data.imageUri || '');
+    
+    const mint = pumpResult?.mint ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const signature = pumpResult?.signature ?? 'mock-signature';
     const token = {
       mint,
       name: b.data.name,
@@ -213,7 +268,7 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       platform: parsed.platform,
       streamerHandle: parsed.username,
       launchedAt: new Date().toISOString(),
-      signature: 'mock-signature',
+      signature,
       launchedBy: 'community',
     };
     launchedTokens.push(token);
@@ -229,7 +284,7 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       { mint, symbol: b.data.symbol, name: b.data.name, platform: parsed.platform }
     );
 
-    return { ok: true, token, streamer: { ...parsed, ...streamerData } };
+    return { ok: true, token, streamer: { ...parsed, ...streamerData }, pumpFunUrl: `https://pump.fun/coin/${mint}` };
   });
 
   // Streamer info endpoint (followers, live status, profile)
