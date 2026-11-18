@@ -13,7 +13,7 @@ import { walletRoutes } from './routes/wallet.js';
 import { tokenRoutes } from './routes/tokens.js';
 import { meRoutes } from './routes/me.js';
 
-const app = Fastify({ logger: true, bodyLimit: 1024 * 1024 }); // 1MB max body
+const app = Fastify({ logger: true, bodyLimit: 5 * 1024 * 1024 }); // 5MB max body (images as base64 data URIs)
 
 // Security headers
 await app.register(helmet, {
