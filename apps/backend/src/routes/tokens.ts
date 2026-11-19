@@ -170,12 +170,13 @@ async function launchOnPumpFun(name: string, symbol: string, uri: string): Promi
 
     const mint = Keypair.generate();
     const creator = launcher.publicKey;
+    const resolvedUri = uri.startsWith('data:') ? 'https://pump.fun' : (uri || 'https://pump.fun');
     const ixs = await PUMP_SDK.createV2AndBuyInstructions({
       global,
       mint: mint.publicKey,
       name,
       symbol,
-      uri: uri || 'https://pump.fun',
+      uri: resolvedUri,
       creator,
       user: launcher.publicKey,
       amount: new BN('1000000000'),
