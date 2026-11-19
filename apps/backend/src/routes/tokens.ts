@@ -1,29 +1,27 @@
 // apps/backend/src/routes/tokens.ts
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { Connection, Keypair } from '@solana/web3.js';
-import { PUMP_SDK, GLOBAL_PDA } from '@pump-fun/pump-sdk';
+import { Connection, Keypair, VersionedTransaction } from '@solana/web3.js';
 import BN from 'bn.js';
 
 const LaunchBody = z.object({
   name: z.string().min(1).max(32),
   symbol: z.string().min(1).max(10),
   description: z.string().max(500).optional(),
-  imageUri: z.string().optional(),
-  creator: z.string().min(1), // base58 pubkey du streamer
+  imageUri: z.string().max(2_000_000).optional(),
+  creator: z.string().min(1),
   platform: z.enum(['twitch', 'kick']).default('twitch'),
-  streamerHandle: z.string().optional(), // @handle du streamer
+  streamerHandle: z.string().optional(),
 });
 
 const LaunchForStreamerBody = z.object({
-  streamerUrl: z.string().min(1), // URL Twitch/Kick du streamer
+  streamerUrl: z.string().min(1),
   name: z.string().min(1).max(32),
   symbol: z.string().min(1).max(10),
   description: z.string().max(500).optional(),
-  imageUri: z.string().optional(),
+  imageUri: z.string().max(2_000_000).optional(),
 });
 
-// Store launched tokens in memory (use DB in production)
 const launchedTokens: Array<{
   mint: string;
   name: string;
@@ -37,7 +35,6 @@ const launchedTokens: Array<{
   launchedBy: string;
 }> = [];
 
-// Notifications store (in-memory, use DB + push in production)
 const notifications: Array<{
   id: string;
   userId: string;
@@ -60,27 +57,21 @@ function addNotification(userId: string, type: 'token_launched' | 'fees_claimed'
   });
 }
 
-// Validate that a Twitch username exists
+// In-memory image storage (mint -> base64 data URI)
+const imageStore = new Map<string, string>();
+
 async function validateTwitchUsername(username: string): Promise<boolean> {
   const clientId = process.env.TWITCH_CLIENT_ID;
   const clientSecret = process.env.TWITCH_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return true; // skip validation if not configured
-
+  if (!clientId || !clientSecret) return true;
   try {
-    // Get app access token
     const tokenRes = await fetch('https://id.twitch.tv/oauth2/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: 'client_credentials',
-      }),
+      body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: 'client_credentials' }),
     });
-    if (!tokenRes.ok) return true; // skip if token fetch fails
+    if (!tokenRes.ok) return true;
     const tokenData = (await tokenRes.json()) as { access_token: string };
-    
-    // Check if user exists
     const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, {
       headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
     });
@@ -88,15 +79,47 @@ async function validateTwitchUsername(username: string): Promise<boolean> {
     const userData = (await userRes.json()) as { data: Array<{ id: string }> };
     return Array.isArray(userData.data) && userData.data.length > 0;
   } catch {
-    return true; // skip on error
+    return true;
   }
 }
 
-// Validate that a Kick username exists (best-effort)
 async function validateKickUsername(username: string): Promise<boolean> {
-  // Kick API is less documented; do basic format validation
   return username.length > 0 && username.length <= 25 && /^[a-zA-Z0-9_]+$/.test(username);
 }
+
+async function fetchTwitchUserData(username: string): Promise<{ displayName: string; profileImageUrl: string; followers: number } | null> {
+  const clientId = process.env.TWITCH_CLIENT_ID;
+  const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+  try {
+    const tokenRes = await fetch('https://id.twitch.tv/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: 'client_credentials' }),
+    });
+    if (!tokenRes.ok) return null;
+    const tokenData = (await tokenRes.json()) as { access_token: string };
+    const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, {
+      headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
+    });
+    if (!userRes.ok) return null;
+    const userData = (await userRes.json()) as { data: Array<{ id: string; display_name: string; profile_image_url: string }> };
+    if (!userData.data?.[0]) return null;
+    const user = userData.data[0];
+    const followRes = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${user.id}`, {
+      headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
+    });
+    let followers = 0;
+    if (followRes.ok) {
+      const followData = (await followRes.json()) as { total: number };
+      followers = followData.total ?? 0;
+    }
+    return { displayName: user.display_name, profileImageUrl: user.profile_image_url, followers };
+  } catch {
+    return null;
+  }
+}
+
 async function fetchKickUserData(username: string): Promise<{ displayName: string; profileImageUrl: string; followers: number; isLive: boolean; streamTitle: string; viewerCount: number } | null> {
   try {
     const res = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(username)}`, {
@@ -105,12 +128,10 @@ async function fetchKickUserData(username: string): Promise<{ displayName: strin
     if (!res.ok) return null;
     const data = (await res.json()) as any;
     if (!data || !data.user) return null;
-    
     const user = data.user;
     const isLive = !!data.livestream;
     const streamTitle = data.livestream?.session_title || '';
     const viewerCount = data.livestream?.viewer_count || 0;
-    
     return {
       displayName: user.username || username,
       profileImageUrl: user.profile_pic || '',
@@ -123,265 +144,79 @@ async function fetchKickUserData(username: string): Promise<{ displayName: strin
     return null;
   }
 }
-async function fetchTwitchUserData(username: string): Promise<{ displayName: string; profileImageUrl: string; followers: number } | null> {
-  const clientId = process.env.TWITCH_CLIENT_ID;
-  const clientSecret = process.env.TWITCH_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
-
-  try {
-    const tokenRes = await fetch('https://id.twitch.tv/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        grant_type: 'client_credentials',
-      }),
-    });
-    if (!tokenRes.ok) return null;
-    const tokenData = (await tokenRes.json()) as { access_token: string };
-
-    const userRes = await fetch(`https://api.twitch.tv/helix/users?login=${encodeURIComponent(username)}`, {
-      headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
-    });
-    if (!userRes.ok) return null;
-    const userData = (await userRes.json()) as { data: Array<{ id: string; display_name: string; profile_image_url: string }> };
-    if (!userData.data?.[0]) return null;
-    const user = userData.data[0];
-
-    const followRes = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${user.id}`, {
-      headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
-    });
-    let followers = 0;
-    if (followRes.ok) {
-      const followData = (await followRes.json()) as { total: number };
-      followers = followData.total ?? 0;
-    }
-
-    return { displayName: user.display_name, profileImageUrl: user.profile_image_url, followers };
-  } catch {
-    return null;
-  }
-}
 
 function parseStreamerUrl(url: string): { platform: 'twitch' | 'kick'; username: string } | null {
   const twitchMatch = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)/);
   if (twitchMatch && twitchMatch[1]) return { platform: 'twitch', username: twitchMatch[1] };
-
   const kickMatch = url.match(/kick\.com\/([a-zA-Z0-9_]+)/);
   if (kickMatch && kickMatch[1]) return { platform: 'kick', username: kickMatch[1] };
-
-  // Direct handle
   if (url.startsWith('@')) {
     const handle = url.slice(1);
     if (handle.length > 0) return { platform: 'twitch', username: handle };
   }
-
   return null;
 }
 
-// In-memory image storage (mint -> base64 data URI)
-const imageStore = new Map<string, string>();
-
-// Real pump.fun launch (requires LAUNCHER_WALLET_SECRET + SOLANA_RPC_URL)
-async function launchOnPumpFun(name: string, symbol: string, imageUri: string): Promise<{ mint: string; signature: string } | null> {
+// PumpPortal token creation (makes token visible on pump.fun)
+async function launchViaPumpPortal(name: string, symbol: string, imageUri: string): Promise<{ mint: string; signature: string } | null> {
   const secret = process.env.LAUNCHER_WALLET_SECRET;
   const rpcUrl = process.env.SOLANA_RPC_URL;
   if (!secret || !rpcUrl) return null;
 
   try {
-    const { Transaction, sendAndConfirmTransaction } = await import('@solana/web3.js');
+    const { Connection, Keypair, VersionedTransaction } = await import('@solana/web3.js');
     const connection = new Connection(rpcUrl, 'confirmed');
     const launcher = Keypair.fromSecretKey(Buffer.from(secret, 'base64'));
-    
-    const globalInfo = await connection.getAccountInfo(GLOBAL_PDA);
-    if (!globalInfo) return null;
-    const global = PUMP_SDK.decodeGlobal(globalInfo);
-
     const mint = Keypair.generate();
-    const mintAddress = mint.publicKey.toBase58();
     
-    // Store image for metadata serving
     if (imageUri) {
-      imageStore.set(mintAddress, imageUri);
+      imageStore.set(mint.publicKey.toBase58(), imageUri);
     }
     
-    // Build metadata URL (served by our backend)
     const backendUrl = process.env.OAUTH_REDIRECT_BASE_URL?.replace('/auth', '') || 'https://streampad-backend.onrender.com';
-    const metadataUri = `${backendUrl}/metadata/${mintAddress}`;
+    const metadataUri = `${backendUrl}/metadata/${mint.publicKey.toBase58()}`;
     
-    const creator = launcher.publicKey;
-    const ixs = await PUMP_SDK.createV2AndBuyInstructions({
-      global,
-      mint: mint.publicKey,
-      name,
-      symbol,
-      uri: metadataUri,
-      creator,
-      user: launcher.publicKey,
-      amount: new BN('1000000000'),
-      solAmount: new BN('100000000'),
-      mayhemMode: false,
+    const response = await fetch('https://pumpportal.fun/api/trade-local', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        publicKey: launcher.publicKey.toBase58(),
+        action: 'create',
+        tokenMetadata: {
+          name,
+          symbol,
+          uri: metadataUri,
+        },
+        mint: mint.publicKey.toBase58(),
+        denominatedInSol: 'true',
+        amount: 0.001,
+        slippage: 10,
+        priorityFee: 0.00005,
+        pool: 'pump',
+      }),
     });
     
-    const sig = await sendAndConfirmTransaction(
-      connection,
-      new Transaction().add(...ixs),
-      [launcher, mint],
-      { commitment: 'confirmed' },
-    );
+    if (!response.ok) {
+      console.error('pumpportal failed:', response.status, await response.text());
+      return null;
+    }
     
-    return { mint: mintAddress, signature: sig };
+    const txData = await response.arrayBuffer();
+    const tx = VersionedTransaction.deserialize(new Uint8Array(txData));
+    
+    tx.sign([mint, launcher]);
+    
+    const signature = await connection.sendTransaction(tx, { skipPreflight: false });
+    await connection.confirmTransaction(signature, 'confirmed');
+    
+    return { mint: mint.publicKey.toBase58(), signature };
   } catch (err) {
-    console.error('pump.fun launch failed:', err);
+    console.error('pumpportal launch failed:', err);
     return null;
   }
 }
 
 export async function tokenRoutes(app: FastifyInstance): Promise<void> {
-  // Launch a token
-  app.post('/tokens/launch', async (req, reply) => {
-    const b = LaunchBody.safeParse(req.body);
-    if (!b.success) return reply.code(400).send({ error: b.error.flatten() });
-
-    const launcherSecret = process.env.LAUNCHER_WALLET_SECRET;
-    if (!launcherSecret) {
-      return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
-    }
-
-    // Try real pump.fun launch
-    const pumpResult = await launchOnPumpFun(b.data.name, b.data.symbol, b.data.imageUri || '');
-
-    const mint = pumpResult?.mint ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const signature = pumpResult?.signature ?? 'mock-signature';
-    const token = {
-      mint,
-      name: b.data.name,
-      symbol: b.data.symbol,
-      description: b.data.description || '',
-      creator: b.data.creator,
-      platform: b.data.platform,
-      streamerHandle: b.data.streamerHandle ?? '',
-      launchedAt: new Date().toISOString(),
-      signature,
-      launchedBy: 'self',
-    };
-    launchedTokens.push(token);
-
-    // Notify the streamer
-    addNotification(b.data.creator, 'token_launched', `Your token $${b.data.symbol} has been launched!`, { mint, symbol: b.data.symbol });
-
-    return { ok: true, token, pumpFunUrl: `https://pump.fun/coin/${mint}` };
-  });
-
-  // Launch a token for a streamer (by URL)
-  app.post('/tokens/launch-for-streamer', async (req, reply) => {
-    const b = LaunchForStreamerBody.safeParse(req.body);
-    if (!b.success) return reply.code(400).send({ error: b.error.flatten() });
-
-    const parsed = parseStreamerUrl(b.data.streamerUrl);
-    if (!parsed) {
-      return reply.code(400).send({ error: 'invalid streamer URL', hint: 'Use a Twitch or Kick URL (e.g., https://twitch.tv/username)' });
-    }
-
-    // Validate that the streamer account exists
-    const isValid = parsed.platform === 'twitch'
-      ? await validateTwitchUsername(parsed.username)
-      : await validateKickUsername(parsed.username);
-    if (!isValid) {
-      return reply.code(400).send({ error: 'streamer not found', hint: `No ${parsed.platform} account found for "${parsed.username}"` });
-    }
-
-    const launcherSecret = process.env.LAUNCHER_WALLET_SECRET;
-    if (!launcherSecret) {
-      return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
-    }
-
-    // Try real pump.fun launch
-    const pumpResult = await launchOnPumpFun(b.data.name, b.data.symbol, b.data.imageUri || '');
-    
-    const mint = pumpResult?.mint ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const signature = pumpResult?.signature ?? 'mock-signature';
-    const token = {
-      mint,
-      name: b.data.name,
-      symbol: b.data.symbol,
-      description: b.data.description || '',
-      creator: `streamer-${parsed.username}`,
-      platform: parsed.platform,
-      streamerHandle: parsed.username,
-      launchedAt: new Date().toISOString(),
-      signature,
-      launchedBy: 'community',
-    };
-    launchedTokens.push(token);
-
-    // Fetch streamer data for response
-    const streamerData = parsed.platform === 'twitch' 
-      ? await fetchTwitchUserData(parsed.username) 
-      : await fetchKickUserData(parsed.username);
-
-    // Notify the streamer that someone launched a token for them
-    addNotification(
-      `streamer-${parsed.username}`,
-      'token_launched_for_you',
-      `Someone launched a token for you: $${b.data.symbol} (${b.data.name})! Claim your fees at streampad.wtf`,
-      { mint, symbol: b.data.symbol, name: b.data.name, platform: parsed.platform }
-    );
-
-    return { ok: true, token, streamer: { ...parsed, ...streamerData }, pumpFunUrl: `https://pump.fun/coin/${mint}` };
-  });
-
-  // Streamer info endpoint (followers, live status, profile)
-  app.get('/streamers/:platform/:username', async (req, reply) => {
-    const { platform, username } = req.params as { platform: string; username: string };
-    
-    if (platform === 'twitch') {
-      const data = await fetchTwitchUserData(username);
-      if (!data) return reply.code(404).send({ error: 'streamer not found' });
-      
-      // Check live status
-      let isLive = false;
-      let streamTitle = '';
-      let viewerCount = 0;
-      const clientId = process.env.TWITCH_CLIENT_ID;
-      const clientSecret = process.env.TWITCH_CLIENT_SECRET;
-      if (clientId && clientSecret) {
-        try {
-          const tokenRes = await fetch('https://id.twitch.tv/oauth2/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: 'client_credentials' }),
-          });
-          if (tokenRes.ok) {
-            const tokenData = (await tokenRes.json()) as { access_token: string };
-            const streamRes = await fetch(`https://api.twitch.tv/helix/streams?user_login=${encodeURIComponent(username)}`, {
-              headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
-            });
-            if (streamRes.ok) {
-              const streamData = (await streamRes.json()) as { data: Array<{ title: string; viewer_count: number; type: string }> };
-              if (streamData.data?.[0]) {
-                isLive = streamData.data[0].type === 'live';
-                streamTitle = streamData.data[0].title;
-                viewerCount = streamData.data[0].viewer_count;
-              }
-            }
-          }
-        } catch {}
-      }
-      
-      return { platform: 'twitch', username, displayName: data.displayName, profileImageUrl: data.profileImageUrl, followers: data.followers, isLive, streamTitle, viewerCount };
-    }
-    
-    if (platform === 'kick') {
-      const data = await fetchKickUserData(username);
-      if (!data) return reply.code(404).send({ error: 'streamer not found' });
-      return { platform: 'kick', username, displayName: data.displayName, profileImageUrl: data.profileImageUrl, followers: data.followers, isLive: data.isLive, streamTitle: data.streamTitle, viewerCount: data.viewerCount };
-    }
-    
-    return reply.code(400).send({ error: 'unsupported platform' });
-  });
-
   // Serve token metadata JSON (for pump.fun)
   app.get('/metadata/:mint', async (req, reply) => {
     const { mint } = req.params as { mint: string };
@@ -427,11 +262,140 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
 
   app.get('/tokens', async () => ({ tokens: launchedTokens }));
 
-  app.get('/tokens/:mint', async (req, reply) => {
-    const { mint } = req.params as { mint: string };
-    const token = launchedTokens.find(t => t.mint === mint);
-    if (!token) return reply.code(404).send({ error: 'token not found' });
-    return token;
+  // Launch a token
+  app.post('/tokens/launch', async (req, reply) => {
+    const b = LaunchBody.safeParse(req.body);
+    if (!b.success) return reply.code(400).send({ error: b.error.flatten() });
+
+    const launcherSecret = process.env.LAUNCHER_WALLET_SECRET;
+    if (!launcherSecret) {
+      return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
+    }
+
+    const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.imageUri || '');
+
+    const mint = pumpResult?.mint ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const signature = pumpResult?.signature ?? 'mock-signature';
+    const token = {
+      mint,
+      name: b.data.name,
+      symbol: b.data.symbol,
+      description: b.data.description || '',
+      creator: b.data.creator,
+      platform: b.data.platform,
+      streamerHandle: b.data.streamerHandle ?? '',
+      launchedAt: new Date().toISOString(),
+      signature,
+      launchedBy: 'self',
+    };
+    launchedTokens.push(token);
+
+    addNotification(b.data.creator, 'token_launched', `Your token $${b.data.symbol} has been launched!`, { mint, symbol: b.data.symbol });
+
+    return { ok: true, token, pumpFunUrl: `https://pump.fun/coin/${mint}` };
+  });
+
+  // Launch a token for a streamer (by URL)
+  app.post('/tokens/launch-for-streamer', async (req, reply) => {
+    const b = LaunchForStreamerBody.safeParse(req.body);
+    if (!b.success) return reply.code(400).send({ error: b.error.flatten() });
+
+    const parsed = parseStreamerUrl(b.data.streamerUrl);
+    if (!parsed) {
+      return reply.code(400).send({ error: 'invalid streamer URL', hint: 'Use a Twitch or Kick URL (e.g., https://twitch.tv/username)' });
+    }
+
+    const isValid = parsed.platform === 'twitch'
+      ? await validateTwitchUsername(parsed.username)
+      : await validateKickUsername(parsed.username);
+    if (!isValid) {
+      return reply.code(400).send({ error: 'streamer not found', hint: `No ${parsed.platform} account found for "${parsed.username}"` });
+    }
+
+    const launcherSecret = process.env.LAUNCHER_WALLET_SECRET;
+    if (!launcherSecret) {
+      return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
+    }
+
+    const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.imageUri || '');
+
+    const mint = pumpResult?.mint ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const signature = pumpResult?.signature ?? 'mock-signature';
+    const token = {
+      mint,
+      name: b.data.name,
+      symbol: b.data.symbol,
+      description: b.data.description || '',
+      creator: `streamer-${parsed.username}`,
+      platform: parsed.platform,
+      streamerHandle: parsed.username,
+      launchedAt: new Date().toISOString(),
+      signature,
+      launchedBy: 'community',
+    };
+    launchedTokens.push(token);
+
+    const streamerData = parsed.platform === 'twitch' 
+      ? await fetchTwitchUserData(parsed.username) 
+      : await fetchKickUserData(parsed.username);
+
+    addNotification(
+      `streamer-${parsed.username}`,
+      'token_launched_for_you',
+      `Someone launched a token for you: $${b.data.symbol} (${b.data.name})! Claim your fees at streampad.wtf`,
+      { mint, symbol: b.data.symbol, name: b.data.name, platform: parsed.platform }
+    );
+
+    return { ok: true, token, streamer: { ...parsed, ...streamerData }, pumpFunUrl: `https://pump.fun/coin/${mint}` };
+  });
+
+  // Streamer info endpoint
+  app.get('/streamers/:platform/:username', async (req, reply) => {
+    const { platform, username } = req.params as { platform: string; username: string };
+    
+    if (platform === 'twitch') {
+      const data = await fetchTwitchUserData(username);
+      if (!data) return reply.code(404).send({ error: 'streamer not found' });
+      
+      let isLive = false;
+      let streamTitle = '';
+      let viewerCount = 0;
+      const clientId = process.env.TWITCH_CLIENT_ID;
+      const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+      if (clientId && clientSecret) {
+        try {
+          const tokenRes = await fetch('https://id.twitch.tv/oauth2/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: 'client_credentials' }),
+          });
+          if (tokenRes.ok) {
+            const tokenData = (await tokenRes.json()) as { access_token: string };
+            const streamRes = await fetch(`https://api.twitch.tv/helix/streams?user_login=${encodeURIComponent(username)}`, {
+              headers: { 'Client-Id': clientId, 'Authorization': `Bearer ${tokenData.access_token}` },
+            });
+            if (streamRes.ok) {
+              const streamData = (await streamRes.json()) as { data: Array<{ title: string; viewer_count: number; type: string }> };
+              if (streamData.data?.[0]) {
+                isLive = streamData.data[0].type === 'live';
+                streamTitle = streamData.data[0].title;
+                viewerCount = streamData.data[0].viewer_count;
+              }
+            }
+          }
+        } catch {}
+      }
+      
+      return { platform: 'twitch', username, displayName: data.displayName, profileImageUrl: data.profileImageUrl, followers: data.followers, isLive, streamTitle, viewerCount };
+    }
+    
+    if (platform === 'kick') {
+      const data = await fetchKickUserData(username);
+      if (!data) return reply.code(404).send({ error: 'streamer not found' });
+      return { platform: 'kick', username, displayName: data.displayName, profileImageUrl: data.profileImageUrl, followers: data.followers, isLive: data.isLive, streamTitle: data.streamTitle, viewerCount: data.viewerCount };
+    }
+    
+    return reply.code(400).send({ error: 'unsupported platform' });
   });
 
   // Notifications
