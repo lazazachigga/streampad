@@ -282,9 +282,12 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.imageUri || '');
+    if (!pumpResult) {
+      return reply.code(502).send({ error: 'token launch failed on-chain', hint: 'Check launcher wallet balance and RPC on Render' });
+    }
 
-    const mint = pumpResult?.mint ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const signature = pumpResult?.signature ?? 'mock-signature';
+    const mint = pumpResult.mint;
+    const signature = pumpResult.signature;
     const token = {
       mint,
       name: b.data.name,
@@ -327,9 +330,12 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.imageUri || '');
+    if (!pumpResult) {
+      return reply.code(502).send({ error: 'token launch failed on-chain', hint: 'Check launcher wallet balance and RPC on Render' });
+    }
 
-    const mint = pumpResult?.mint ?? `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const signature = pumpResult?.signature ?? 'mock-signature';
+    const mint = pumpResult.mint;
+    const signature = pumpResult.signature;
     const token = {
       mint,
       name: b.data.name,
