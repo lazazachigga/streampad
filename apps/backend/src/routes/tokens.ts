@@ -97,6 +97,32 @@ async function validateKickUsername(username: string): Promise<boolean> {
   // Kick API is less documented; do basic format validation
   return username.length > 0 && username.length <= 25 && /^[a-zA-Z0-9_]+$/.test(username);
 }
+async function fetchKickUserData(username: string): Promise<{ displayName: string; profileImageUrl: string; followers: number; isLive: boolean; streamTitle: string; viewerCount: number } | null> {
+  try {
+    const res = await fetch(`https://kick.com/api/v2/channels/${encodeURIComponent(username)}`, {
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as any;
+    if (!data || !data.user) return null;
+    
+    const user = data.user;
+    const isLive = !!data.livestream;
+    const streamTitle = data.livestream?.session_title || '';
+    const viewerCount = data.livestream?.viewer_count || 0;
+    
+    return {
+      displayName: user.username || username,
+      profileImageUrl: user.profile_pic || '',
+      followers: parseInt(data.followers_count) || 0,
+      isLive,
+      streamTitle,
+      viewerCount,
+    };
+  } catch {
+    return null;
+  }
+}
 async function fetchTwitchUserData(username: string): Promise<{ displayName: string; profileImageUrl: string; followers: number } | null> {
   const clientId = process.env.TWITCH_CLIENT_ID;
   const clientSecret = process.env.TWITCH_CLIENT_SECRET;
@@ -291,7 +317,9 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     launchedTokens.push(token);
 
     // Fetch streamer data for response
-    const streamerData = parsed.platform === 'twitch' ? await fetchTwitchUserData(parsed.username) : null;
+    const streamerData = parsed.platform === 'twitch' 
+      ? await fetchTwitchUserData(parsed.username) 
+      : await fetchKickUserData(parsed.username);
 
     // Notify the streamer that someone launched a token for them
     addNotification(
@@ -345,8 +373,13 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       return { platform: 'twitch', username, displayName: data.displayName, profileImageUrl: data.profileImageUrl, followers: data.followers, isLive, streamTitle, viewerCount };
     }
     
-    // Kick - basic info
-    return { platform: 'kick', username, displayName: username, profileImageUrl: '', followers: 0, isLive: false, streamTitle: '', viewerCount: 0 };
+    if (platform === 'kick') {
+      const data = await fetchKickUserData(username);
+      if (!data) return reply.code(404).send({ error: 'streamer not found' });
+      return { platform: 'kick', username, displayName: data.displayName, profileImageUrl: data.profileImageUrl, followers: data.followers, isLive: data.isLive, streamTitle: data.streamTitle, viewerCount: data.viewerCount };
+    }
+    
+    return reply.code(400).send({ error: 'unsupported platform' });
   });
 
   // Serve token metadata JSON (for pump.fun)
