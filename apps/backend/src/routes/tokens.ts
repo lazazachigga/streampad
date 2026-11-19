@@ -157,8 +157,39 @@ function parseStreamerUrl(url: string): { platform: 'twitch' | 'kick'; username:
   return null;
 }
 
+// Durable metadata: image + JSON pinned to IPFS via Pinata (PINATA_JWT on Render)
+async function uploadToPinata(file: Blob, fileName: string): Promise<string> {
+  const jwt = process.env.PINATA_JWT;
+  if (!jwt) throw new Error('PINATA_JWT not set');
+  const form = new FormData();
+  form.append('network', 'public');
+  form.append('file', file, fileName);
+  const res = await fetch('https://uploads.pinata.cloud/v3/files', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${jwt}` },
+    body: form,
+  });
+  if (!res.ok) throw new Error(`pinata upload failed: ${res.status} ${await res.text()}`);
+  const json = (await res.json()) as { data?: { cid?: string } };
+  if (!json.data?.cid) throw new Error('pinata returned no cid');
+  return json.data.cid;
+}
+
+async function buildMetadataUri(name: string, symbol: string, description: string, imageDataUri: string): Promise<string> {
+  const match = imageDataUri.match(/^data:([^;]+);base64,(.+)$/);
+  if (!match) throw new Error('image must be a base64 data URI');
+  const bytes = Buffer.from(match[2]!, 'base64');
+  const imageCid = await uploadToPinata(new Blob([bytes], { type: match[1]! }), `${symbol}-image`);
+  const image = `https://ipfs.io/ipfs/${imageCid}`;
+  const metaCid = await uploadToPinata(
+    new Blob([JSON.stringify({ name, symbol, description, image, showName: true, createdOn: 'https://streampad.wtf' })], { type: 'application/json' }),
+    `${symbol}-metadata.json`,
+  );
+  return `https://ipfs.io/ipfs/${metaCid}`;
+}
+
 // PumpPortal token creation (makes token visible on pump.fun)
-async function launchViaPumpPortal(name: string, symbol: string, imageUri: string): Promise<{ mint: string; signature: string } | null> {
+async function launchViaPumpPortal(name: string, symbol: string, description: string, imageUri: string): Promise<{ mint: string; signature: string } | null> {
   const secret = process.env.LAUNCHER_WALLET_SECRET;
   const rpcUrl = process.env.SOLANA_RPC_URL;
   if (!secret || !rpcUrl) return null;
@@ -168,13 +199,8 @@ async function launchViaPumpPortal(name: string, symbol: string, imageUri: strin
     const connection = new Connection(rpcUrl, 'confirmed');
     const launcher = Keypair.fromSecretKey(Buffer.from(secret, 'base64'));
     const mint = Keypair.generate();
-    
-    if (imageUri) {
-      imageStore.set(mint.publicKey.toBase58(), imageUri);
-    }
-    
-    const backendUrl = process.env.OAUTH_REDIRECT_BASE_URL?.replace('/auth', '') || 'https://streampad-backend.onrender.com';
-    const metadataUri = `${backendUrl}/metadata/${mint.publicKey.toBase58()}`;
+
+    const metadataUri = await buildMetadataUri(name, symbol, description, imageUri);
     
     const response = await fetch('https://pumpportal.fun/api/trade-local', {
       method: 'POST',
@@ -281,7 +307,10 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
     }
 
-    const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.imageUri || '');
+    if (!process.env.PINATA_JWT) {
+      return reply.code(503).send({ error: 'metadata storage not configured', hint: 'Set PINATA_JWT on Render (free Pinata account)' });
+    }
+    const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.description || '', b.data.imageUri || '');
     if (!pumpResult) {
       return reply.code(502).send({ error: 'token launch failed on-chain', hint: 'Check launcher wallet balance and RPC on Render' });
     }
@@ -329,7 +358,10 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
     }
 
-    const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.imageUri || '');
+    if (!process.env.PINATA_JWT) {
+      return reply.code(503).send({ error: 'metadata storage not configured', hint: 'Set PINATA_JWT on Render (free Pinata account)' });
+    }
+    const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.description || '', b.data.imageUri || '');
     if (!pumpResult) {
       return reply.code(502).send({ error: 'token launch failed on-chain', hint: 'Check launcher wallet balance and RPC on Render' });
     }
