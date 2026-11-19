@@ -223,6 +223,10 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     const token = launchedTokens.find(t => t.mint === mint);
     if (!token) return reply.code(404).send({ error: 'token not found' });
     
+    // Allow cross-origin access for pump.fun
+    reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    reply.header('Access-Control-Allow-Origin', '*');
+    
     const imageUri = imageStore.get(mint) || '';
     const backendUrl = process.env.OAUTH_REDIRECT_BASE_URL?.replace('/auth', '') || 'https://streampad-backend.onrender.com';
     const imageUrl = imageUri.startsWith('data:') 
@@ -244,6 +248,11 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     const { mint } = req.params as { mint: string };
     const imageUri = imageStore.get(mint);
     if (!imageUri) return reply.code(404).send({ error: 'image not found' });
+    
+    // Allow cross-origin access for pump.fun
+    reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+    reply.header('Access-Control-Allow-Origin', '*');
+    reply.header('Access-Control-Allow-Methods', 'GET');
     
     if (imageUri.startsWith('data:')) {
       const match = imageUri.match(/^data:([^;]+);base64,(.+)$/);
