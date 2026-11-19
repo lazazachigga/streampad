@@ -28,6 +28,7 @@ const launchedTokens: Array<{
   mint: string;
   name: string;
   symbol: string;
+  description?: string;
   creator: string;
   platform: string;
   streamerHandle: string;
@@ -153,8 +154,11 @@ function parseStreamerUrl(url: string): { platform: 'twitch' | 'kick'; username:
   return null;
 }
 
+// In-memory image storage (mint -> base64 data URI)
+const imageStore = new Map<string, string>();
+
 // Real pump.fun launch (requires LAUNCHER_WALLET_SECRET + SOLANA_RPC_URL)
-async function launchOnPumpFun(name: string, symbol: string, uri: string): Promise<{ mint: string; signature: string } | null> {
+async function launchOnPumpFun(name: string, symbol: string, imageUri: string): Promise<{ mint: string; signature: string } | null> {
   const secret = process.env.LAUNCHER_WALLET_SECRET;
   const rpcUrl = process.env.SOLANA_RPC_URL;
   if (!secret || !rpcUrl) return null;
@@ -169,14 +173,24 @@ async function launchOnPumpFun(name: string, symbol: string, uri: string): Promi
     const global = PUMP_SDK.decodeGlobal(globalInfo);
 
     const mint = Keypair.generate();
+    const mintAddress = mint.publicKey.toBase58();
+    
+    // Store image for metadata serving
+    if (imageUri) {
+      imageStore.set(mintAddress, imageUri);
+    }
+    
+    // Build metadata URL (served by our backend)
+    const backendUrl = process.env.OAUTH_REDIRECT_BASE_URL?.replace('/auth', '') || 'https://streampad-backend.onrender.com';
+    const metadataUri = `${backendUrl}/metadata/${mintAddress}`;
+    
     const creator = launcher.publicKey;
-    const resolvedUri = uri.startsWith('data:') ? 'https://pump.fun' : (uri || 'https://pump.fun');
     const ixs = await PUMP_SDK.createV2AndBuyInstructions({
       global,
       mint: mint.publicKey,
       name,
       symbol,
-      uri: resolvedUri,
+      uri: metadataUri,
       creator,
       user: launcher.publicKey,
       amount: new BN('1000000000'),
@@ -191,7 +205,7 @@ async function launchOnPumpFun(name: string, symbol: string, uri: string): Promi
       { commitment: 'confirmed' },
     );
     
-    return { mint: mint.publicKey.toBase58(), signature: sig };
+    return { mint: mintAddress, signature: sig };
   } catch (err) {
     console.error('pump.fun launch failed:', err);
     return null;
@@ -218,6 +232,7 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       mint,
       name: b.data.name,
       symbol: b.data.symbol,
+      description: b.data.description || '',
       creator: b.data.creator,
       platform: b.data.platform,
       streamerHandle: b.data.streamerHandle ?? '',
@@ -265,6 +280,7 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
       mint,
       name: b.data.name,
       symbol: b.data.symbol,
+      description: b.data.description || '',
       creator: `streamer-${parsed.username}`,
       platform: parsed.platform,
       streamerHandle: parsed.username,
@@ -332,6 +348,51 @@ export async function tokenRoutes(app: FastifyInstance): Promise<void> {
     // Kick - basic info
     return { platform: 'kick', username, displayName: username, profileImageUrl: '', followers: 0, isLive: false, streamTitle: '', viewerCount: 0 };
   });
+
+  // Serve token metadata JSON (for pump.fun)
+  app.get('/metadata/:mint', async (req, reply) => {
+    const { mint } = req.params as { mint: string };
+    const token = launchedTokens.find(t => t.mint === mint);
+    if (!token) return reply.code(404).send({ error: 'token not found' });
+    
+    const imageUri = imageStore.get(mint) || '';
+    const backendUrl = process.env.OAUTH_REDIRECT_BASE_URL?.replace('/auth', '') || 'https://streampad-backend.onrender.com';
+    const imageUrl = imageUri.startsWith('data:') 
+      ? `${backendUrl}/images/${mint}`
+      : (imageUri || '');
+    
+    return {
+      name: token.name,
+      symbol: token.symbol,
+      description: token.description || '',
+      image: imageUrl,
+      showName: true,
+      createdOn: 'https://streampad.wtf',
+    };
+  });
+
+  // Serve token image
+  app.get('/images/:mint', async (req, reply) => {
+    const { mint } = req.params as { mint: string };
+    const imageUri = imageStore.get(mint);
+    if (!imageUri) return reply.code(404).send({ error: 'image not found' });
+    
+    if (imageUri.startsWith('data:')) {
+      const match = imageUri.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        const contentType = match[1]!;
+        const base64Data = match[2]!;
+        const buffer = Buffer.from(base64Data, 'base64');
+        reply.header('Content-Type', contentType);
+        reply.header('Cache-Control', 'public, max-age=31536000');
+        return reply.send(buffer);
+      }
+    }
+    
+    return reply.redirect(imageUri);
+  });
+
+  app.get('/tokens', async () => ({ tokens: launchedTokens }));
 
   app.get('/tokens/:mint', async (req, reply) => {
     const { mint } = req.params as { mint: string };
