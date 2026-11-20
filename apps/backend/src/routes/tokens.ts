@@ -1,18 +1,8 @@
-// apps/backend/src/routes/tokens.ts
+﻿// apps/backend/src/routes/tokens.ts
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { Connection, Keypair, VersionedTransaction } from '@solana/web3.js';
 import BN from 'bn.js';
-
-const LaunchBody = z.object({
-  name: z.string().min(1).max(32),
-  symbol: z.string().min(1).max(10),
-  description: z.string().max(500).optional(),
-  imageUri: z.string().max(2_000_000).optional(),
-  creator: z.string().min(1),
-  platform: z.enum(['twitch', 'kick']).default('twitch'),
-  streamerHandle: z.string().optional(),
-});
 
 const LaunchForStreamerBody = z.object({
   streamerUrl: z.string().min(1),
@@ -56,9 +46,6 @@ function addNotification(userId: string, type: 'token_launched' | 'fees_claimed'
     metadata,
   });
 }
-
-// In-memory image storage (mint -> base64 data URI)
-const imageStore = new Map<string, string>();
 
 async function validateTwitchUsername(username: string): Promise<boolean> {
   const clientId = process.env.TWITCH_CLIENT_ID;
@@ -243,97 +230,16 @@ async function launchViaPumpPortal(name: string, symbol: string, description: st
 }
 
 export async function tokenRoutes(app: FastifyInstance): Promise<void> {
-  // Serve token metadata JSON (for pump.fun)
-  app.get('/metadata/:mint', async (req, reply) => {
-    const { mint } = req.params as { mint: string };
-    const token = launchedTokens.find(t => t.mint === mint);
-    if (!token) return reply.code(404).send({ error: 'token not found' });
-    
-    // Allow cross-origin access for pump.fun
-    reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
-    reply.header('Access-Control-Allow-Origin', '*');
-    
-    const imageUri = imageStore.get(mint) || '';
-    const backendUrl = process.env.OAUTH_REDIRECT_BASE_URL?.replace('/auth', '') || 'https://streampad-backend.onrender.com';
-    const imageUrl = imageUri.startsWith('data:') 
-      ? `${backendUrl}/images/${mint}`
-      : (imageUri || '');
-    
-    return {
-      name: token.name,
-      symbol: token.symbol,
-      description: token.description || '',
-      image: imageUrl,
-      showName: true,
-      createdOn: 'https://streampad.wtf',
-    };
-  });
-
-  // Serve token image
-  app.get('/images/:mint', async (req, reply) => {
-    const { mint } = req.params as { mint: string };
-    const imageUri = imageStore.get(mint);
-    if (!imageUri) return reply.code(404).send({ error: 'image not found' });
-    
-    // Allow cross-origin access for pump.fun
-    reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
-    reply.header('Access-Control-Allow-Origin', '*');
-    reply.header('Access-Control-Allow-Methods', 'GET');
-    
-    if (imageUri.startsWith('data:')) {
-      const match = imageUri.match(/^data:([^;]+);base64,(.+)$/);
-      if (match) {
-        const contentType = match[1]!;
-        const base64Data = match[2]!;
-        const buffer = Buffer.from(base64Data, 'base64');
-        reply.header('Content-Type', contentType);
-        reply.header('Cache-Control', 'public, max-age=31536000');
-        return reply.send(buffer);
-      }
-    }
-    
-    return reply.redirect(imageUri);
-  });
-
   app.get('/tokens', async () => ({ tokens: launchedTokens }));
 
-  // Launch a token
-  app.post('/tokens/launch', async (req, reply) => {
-    const b = LaunchBody.safeParse(req.body);
-    if (!b.success) return reply.code(400).send({ error: b.error.flatten() });
-
-    const launcherSecret = process.env.LAUNCHER_WALLET_SECRET;
-    if (!launcherSecret) {
-      return reply.code(503).send({ error: 'launcher not configured', hint: 'Set LAUNCHER_WALLET_SECRET on Render' });
+  // Storage check: uploads a tiny test file to Pinata (no on-chain action)
+  app.get('/health/pinata', async (_req, reply) => {
+    try {
+      const cid = await uploadToPinata(new Blob([JSON.stringify({ check: 'streampad', at: new Date().toISOString() })], { type: 'application/json' }), 'healthcheck.json');
+      return { ok: true, cid, url: `https://ipfs.io/ipfs/${cid}` };
+    } catch (err) {
+      return reply.code(503).send({ ok: false, error: err instanceof Error ? err.message : 'pinata check failed' });
     }
-
-    if (!process.env.PINATA_JWT) {
-      return reply.code(503).send({ error: 'metadata storage not configured', hint: 'Set PINATA_JWT on Render (free Pinata account)' });
-    }
-    const pumpResult = await launchViaPumpPortal(b.data.name, b.data.symbol, b.data.description || '', b.data.imageUri || '');
-    if (!pumpResult) {
-      return reply.code(502).send({ error: 'token launch failed on-chain', hint: 'Check launcher wallet balance and RPC on Render' });
-    }
-
-    const mint = pumpResult.mint;
-    const signature = pumpResult.signature;
-    const token = {
-      mint,
-      name: b.data.name,
-      symbol: b.data.symbol,
-      description: b.data.description || '',
-      creator: b.data.creator,
-      platform: b.data.platform,
-      streamerHandle: b.data.streamerHandle ?? '',
-      launchedAt: new Date().toISOString(),
-      signature,
-      launchedBy: 'self',
-    };
-    launchedTokens.push(token);
-
-    addNotification(b.data.creator, 'token_launched', `Your token $${b.data.symbol} has been launched!`, { mint, symbol: b.data.symbol });
-
-    return { ok: true, token, pumpFunUrl: `https://pump.fun/coin/${mint}` };
   });
 
   // Launch a token for a streamer (by URL)
